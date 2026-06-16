@@ -23,10 +23,32 @@ import kr.maribel.backend.domain.DomainEnums.Role;
 import kr.maribel.backend.domain.DomainEnums.ServerOpenStatus;
 import kr.maribel.backend.domain.DomainEnums.TermsType;
 import kr.maribel.backend.domain.DomainEnums.UserStatus;
+import org.springframework.data.domain.Page;
 
 public final class ApiDtos {
 
     private ApiDtos() {
+    }
+
+    /** 페이지네이션 응답 공통 래퍼. */
+    public record PageResponse<T>(
+            List<T> content,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages,
+            boolean hasNext
+    ) {
+        public static <T> PageResponse<T> of(Page<?> source, List<T> content) {
+            return new PageResponse<>(
+                    content,
+                    source.getNumber(),
+                    source.getSize(),
+                    source.getTotalElements(),
+                    source.getTotalPages(),
+                    source.hasNext()
+            );
+        }
     }
 
     public record DevLoginRequest(
