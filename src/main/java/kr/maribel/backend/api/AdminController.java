@@ -1,0 +1,277 @@
+package kr.maribel.backend.api;
+
+import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import kr.maribel.backend.config.OpenApiConfig;
+import kr.maribel.backend.api.ApiDtos.AdminMailSendRequest;
+import kr.maribel.backend.api.ApiDtos.AdminMemberResponse;
+import kr.maribel.backend.api.ApiDtos.AuditLogResponse;
+import kr.maribel.backend.api.ApiDtos.CategoryRequest;
+import kr.maribel.backend.api.ApiDtos.CategoryResponse;
+import kr.maribel.backend.api.ApiDtos.ChargeHistoryResponse;
+import kr.maribel.backend.api.ApiDtos.DashboardResponse;
+import kr.maribel.backend.api.ApiDtos.EventResponse;
+import kr.maribel.backend.api.ApiDtos.EventUpsertRequest;
+import kr.maribel.backend.api.ApiDtos.InquiryReplyRequest;
+import kr.maribel.backend.api.ApiDtos.InquiryResponse;
+import kr.maribel.backend.api.ApiDtos.MailResponse;
+import kr.maribel.backend.api.ApiDtos.MailTemplateRequest;
+import kr.maribel.backend.api.ApiDtos.MailTemplateResponse;
+import kr.maribel.backend.api.ApiDtos.ProductResponse;
+import kr.maribel.backend.api.ApiDtos.ProductUpsertRequest;
+import kr.maribel.backend.api.ApiDtos.RedeemCodeCreateRequest;
+import kr.maribel.backend.api.ApiDtos.RedeemCodeResponse;
+import kr.maribel.backend.api.ApiDtos.RefundProcessRequest;
+import kr.maribel.backend.api.ApiDtos.RefundResponse;
+import kr.maribel.backend.domain.Category;
+import kr.maribel.backend.domain.MailTemplate;
+import kr.maribel.backend.domain.OutboundMail;
+import kr.maribel.backend.domain.Product;
+import kr.maribel.backend.security.AuthenticatedPrincipal;
+import kr.maribel.backend.service.AdminQueryService;
+import kr.maribel.backend.service.AuditService;
+import kr.maribel.backend.service.ContactService;
+import kr.maribel.backend.service.EventService;
+import kr.maribel.backend.service.MailService;
+import kr.maribel.backend.service.RefundService;
+import kr.maribel.backend.service.ShopService;
+import kr.maribel.backend.repository.AuditLogRepository;
+import kr.maribel.backend.repository.CashChargeRepository;
+import kr.maribel.backend.repository.CategoryRepository;
+import kr.maribel.backend.repository.MailTemplateRepository;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/admin")
+@Tag(name = "Admin")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+public class AdminController {
+
+    private final AdminQueryService adminQueryService;
+    private final ShopService shopService;
+    private final EventService eventService;
+    private final MailService mailService;
+    private final RefundService refundService;
+    private final ContactService contactService;
+    private final AuditService auditService;
+    private final CategoryRepository categoryRepository;
+    private final MailTemplateRepository mailTemplateRepository;
+    private final CashChargeRepository cashChargeRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    public AdminController(AdminQueryService adminQueryService,
+                           ShopService shopService,
+                           EventService eventService,
+                           MailService mailService,
+                           RefundService refundService,
+                           ContactService contactService,
+                           AuditService auditService,
+                           CategoryRepository categoryRepository,
+                           MailTemplateRepository mailTemplateRepository,
+                           CashChargeRepository cashChargeRepository,
+                           AuditLogRepository auditLogRepository) {
+        this.adminQueryService = adminQueryService;
+        this.shopService = shopService;
+        this.eventService = eventService;
+        this.mailService = mailService;
+        this.refundService = refundService;
+        this.contactService = contactService;
+        this.auditService = auditService;
+        this.categoryRepository = categoryRepository;
+        this.mailTemplateRepository = mailTemplateRepository;
+        this.cashChargeRepository = cashChargeRepository;
+        this.auditLogRepository = auditLogRepository;
+    }
+
+    @GetMapping("/dashboard")
+    @Operation(summary = "관리자 대시보드 조회")
+    DashboardResponse dashboard() {
+        return adminQueryService.dashboard();
+    }
+
+    @GetMapping("/members")
+    @Operation(summary = "최근 회원 목록 조회")
+    List<AdminMemberResponse> members() {
+        return adminQueryService.recentMembers().stream().map(DtoMapper::adminMember).toList();
+    }
+
+    @GetMapping("/audit-logs")
+    @Operation(summary = "감사 로그 조회")
+    List<AuditLogResponse> auditLogs() {
+        return auditLogRepository.findTop100ByOrderByCreatedAtDesc().stream().map(DtoMapper::auditLog).toList();
+    }
+
+    @GetMapping("/categories")
+    @Operation(summary = "관리자 카테고리 목록 조회")
+    List<CategoryResponse> categories() {
+        return categoryRepository.findAllByOrderBySortOrderAscNameAsc().stream().map(DtoMapper::category).toList();
+    }
+
+    @PostMapping("/categories")
+    @Operation(summary = "카테고리 생성")
+    CategoryResponse createCategory(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                    @Valid @RequestBody CategoryRequest request) {
+        Category category = shopService.upsertCategory(null, request.name(), request.sortOrder(), request.active());
+        auditService.record(principal, "Category", String.valueOf(category.getId()), "CREATE", null, category.getName());
+        return DtoMapper.category(category);
+    }
+
+    @PatchMapping("/categories/{id}")
+    @Operation(summary = "카테고리 수정")
+    CategoryResponse updateCategory(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                    @PathVariable Long id,
+                                    @Valid @RequestBody CategoryRequest request) {
+        Category category = shopService.upsertCategory(id, request.name(), request.sortOrder(), request.active());
+        auditService.record(principal, "Category", String.valueOf(category.getId()), "UPDATE", null, category.getName());
+        return DtoMapper.category(category);
+    }
+
+    @GetMapping("/mail-templates")
+    @Operation(summary = "우편 템플릿 목록 조회")
+    List<MailTemplateResponse> mailTemplates() {
+        return mailTemplateRepository.findAll().stream().map(DtoMapper::mailTemplate).toList();
+    }
+
+    @PostMapping("/mail-templates")
+    @Operation(summary = "우편 템플릿 생성")
+    MailTemplateResponse createMailTemplate(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                            @Valid @RequestBody MailTemplateRequest request) {
+        MailTemplate template = shopService.createMailTemplate(request.mailCode(), request.subject(), request.content(), request.rewardsJson());
+        auditService.record(principal, "MailTemplate", String.valueOf(template.getId()), "CREATE", null, template.getMailCode());
+        return DtoMapper.mailTemplate(template);
+    }
+
+    @GetMapping("/products")
+    @Operation(summary = "관리자 상품 목록 검색")
+    List<ProductResponse> products(@RequestParam(required = false) Long categoryId,
+                                   @RequestParam(required = false) Boolean recommended,
+                                   @RequestParam(required = false) Boolean newBadge,
+                                   @RequestParam(required = false) Long minPrice,
+                                   @RequestParam(required = false) Long maxPrice,
+                                   @RequestParam(required = false) String keyword) {
+        return shopService.searchProducts(categoryId, recommended, newBadge, minPrice, maxPrice, keyword, false)
+                .stream()
+                .map(DtoMapper::product)
+                .toList();
+    }
+
+    @PostMapping("/products")
+    @Operation(summary = "상품 생성")
+    ProductResponse createProduct(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                  @Valid @RequestBody ProductUpsertRequest request) {
+        Product product = shopService.upsertProduct(null, request);
+        auditService.record(principal, "Product", String.valueOf(product.getId()), "CREATE", null, product.getName());
+        return DtoMapper.product(product);
+    }
+
+    @PatchMapping("/products/{id}")
+    @Operation(summary = "상품 수정")
+    ProductResponse updateProduct(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                  @PathVariable Long id,
+                                  @Valid @RequestBody ProductUpsertRequest request) {
+        Product product = shopService.upsertProduct(id, request);
+        auditService.record(principal, "Product", String.valueOf(product.getId()), "UPDATE", null, product.getName());
+        return DtoMapper.product(product);
+    }
+
+    @PostMapping("/events")
+    @Operation(summary = "이벤트 생성")
+    EventResponse createEvent(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                              @Valid @RequestBody EventUpsertRequest request) {
+        var event = eventService.upsertEvent(null, request);
+        auditService.record(principal, "Event", String.valueOf(event.getId()), "CREATE", null, event.getName());
+        return DtoMapper.event(event);
+    }
+
+    @PatchMapping("/events/{id}")
+    @Operation(summary = "이벤트 수정")
+    EventResponse updateEvent(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                              @PathVariable Long id,
+                              @Valid @RequestBody EventUpsertRequest request) {
+        var event = eventService.upsertEvent(id, request);
+        auditService.record(principal, "Event", String.valueOf(event.getId()), "UPDATE", null, event.getName());
+        return DtoMapper.event(event);
+    }
+
+    @PostMapping("/redeem-codes")
+    @Operation(summary = "리딤코드 생성")
+    RedeemCodeResponse createRedeemCode(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                        @Valid @RequestBody RedeemCodeCreateRequest request) {
+        var code = eventService.createRedeemCode(request.code(), request.mailTemplateId(), request.maxUses(), request.expiresAt());
+        auditService.record(principal, "RedeemCode", String.valueOf(code.getId()), "CREATE", null, code.getCode());
+        return DtoMapper.redeemCode(code);
+    }
+
+    @GetMapping("/mails")
+    @Operation(summary = "최근 우편 큐 조회")
+    List<MailResponse> mails() {
+        return mailService.listAllRecent().stream().map(DtoMapper::mail).toList();
+    }
+
+    @PostMapping("/mails/send")
+    @Operation(summary = "운영자 우편 별도 지급")
+    MailResponse sendMail(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                          @Valid @RequestBody AdminMailSendRequest request) {
+        OutboundMail mail = mailService.enqueueManual(request.targetUuid(), request.mailTemplateId(), request.sourceRefId());
+        auditService.record(principal, "OutboundMail", String.valueOf(mail.getId()), "CREATE", null, mail.getMailCode());
+        return DtoMapper.mail(mail);
+    }
+
+    @PostMapping("/mails/{id}/retry")
+    @Operation(summary = "실패 우편 재시도")
+    MailResponse retryMail(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                           @PathVariable Long id) {
+        OutboundMail mail = mailService.retry(id);
+        auditService.record(principal, "OutboundMail", String.valueOf(mail.getId()), "RETRY", null, mail.getStatus().name());
+        return DtoMapper.mail(mail);
+    }
+
+    @GetMapping("/payments/charges")
+    @Operation(summary = "결제 충전 내역 조회")
+    List<ChargeHistoryResponse> charges() {
+        return cashChargeRepository.findAll().stream().map(DtoMapper::chargeHistory).toList();
+    }
+
+    @GetMapping("/refunds")
+    @Operation(summary = "환불 요청 목록 조회")
+    List<RefundResponse> refunds() {
+        return refundService.recent().stream().map(DtoMapper::refund).toList();
+    }
+
+    @PatchMapping("/refunds/{id}/process")
+    @Operation(summary = "환불 요청 처리")
+    RefundResponse processRefund(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                 @PathVariable Long id,
+                                 @Valid @RequestBody RefundProcessRequest request) {
+        var refund = refundService.process(id, principal.adminId(), request.status(), request.operatorMemo());
+        auditService.record(principal, "RefundRequest", String.valueOf(refund.getId()), "PROCESS", null, refund.getStatus().name());
+        return DtoMapper.refund(refund);
+    }
+
+    @GetMapping("/inquiries")
+    @Operation(summary = "문의 목록 조회")
+    List<InquiryResponse> inquiries() {
+        return contactService.recent().stream().map(DtoMapper::inquiry).toList();
+    }
+
+    @PostMapping("/inquiries/{id}/reply")
+    @Operation(summary = "문의 답변 등록")
+    InquiryResponse reply(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                          @PathVariable Long id,
+                          @Valid @RequestBody InquiryReplyRequest request) {
+        var inquiry = contactService.reply(id, principal.adminId(), request.content());
+        auditService.record(principal, "ContactInquiry", String.valueOf(inquiry.getId()), "REPLY", null, inquiry.getStatus().name());
+        return DtoMapper.inquiry(inquiry);
+    }
+}

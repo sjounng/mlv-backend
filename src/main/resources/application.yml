@@ -1,0 +1,93 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: maribel-backend
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:file:./data/maribel;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      path: /h2-console
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+  jackson:
+    default-property-inclusion: non_null
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: false
+
+scalar:
+  enabled: true
+  path: /scalar
+  url: /v3/api-docs
+  theme: deepSpace
+  layout: modern
+  dark-mode: true
+  hide-search: false
+  document-download-type: both
+  operation-title-source: summary
+  tag-sorter: alpha
+  search-hot-key: k
+
+maribel:
+  jwt:
+    issuer: maribel-backend
+    secret: ${MARIBEL_JWT_SECRET:dev-only-change-this-secret-before-production-please}
+    access-token-ttl: PT15M
+    member-refresh-token-ttl: P14D
+    admin-refresh-token-ttl: PT12H
+    refresh-cookie-name: maribel_refresh
+    refresh-cookie-path: /api/auth
+    refresh-cookie-secure: ${MARIBEL_REFRESH_COOKIE_SECURE:false}
+    refresh-cookie-same-site: Lax
+  cors:
+    allowed-origins: ${MARIBEL_CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+  server-status:
+    status: ${MARIBEL_SERVER_STATUS:OPEN}
+    message: ${MARIBEL_SERVER_STATUS_MESSAGE:마리벨 서버가 열려 있습니다.}
+    online-players: ${MARIBEL_ONLINE_PLAYERS:0}
+  webpanel:
+    api-key: ${MARIBEL_WEBPANEL_API_KEY:dev-webpanel-key-change-me}
+  microsoft:
+    client-id: ${MICROSOFT_CLIENT_ID:}
+    redirect-uri: ${MICROSOFT_REDIRECT_URI:http://localhost:8080/api/auth/microsoft/callback}
+    scopes: XboxLive.signin offline_access
+  stella:
+    merchant-id: ${STELLA_MERCHANT_ID:}
+    webhook-secret: ${STELLA_WEBHOOK_SECRET:dev-stella-secret-change-me}
+    payment-base-url: ${STELLA_PAYMENT_BASE_URL:https://stella.example.invalid/pay}
+  bootstrap-admin:
+    username: ${MARIBEL_BOOTSTRAP_ADMIN_USERNAME:admin}
+    password: ${MARIBEL_BOOTSTRAP_ADMIN_PASSWORD:change-me-now}
