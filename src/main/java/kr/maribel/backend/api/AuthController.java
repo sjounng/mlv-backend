@@ -11,10 +11,17 @@ import kr.maribel.backend.api.ApiDtos.LogoutRequest;
 import kr.maribel.backend.api.ApiDtos.MicrosoftAuthorizeUrlResponse;
 import kr.maribel.backend.api.ApiDtos.RefreshRequest;
 import kr.maribel.backend.api.ApiDtos.TokenResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import kr.maribel.backend.config.MaribelProperties;
 import kr.maribel.backend.config.OpenApiConfig;
 import kr.maribel.backend.security.AuthenticatedPrincipal;
 import kr.maribel.backend.security.RefreshTokenCookieService;
 import kr.maribel.backend.service.AuthService;
+import kr.maribel.backend.service.MicrosoftIdentity;
+import kr.maribel.backend.service.MicrosoftOAuthService;
+import org.springframework.util.StringUtils;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,10 +37,17 @@ public class AuthController {
 
     private final AuthService authService;
     private final RefreshTokenCookieService refreshTokenCookieService;
+    private final MicrosoftOAuthService microsoftOAuthService;
+    private final MaribelProperties properties;
 
-    public AuthController(AuthService authService, RefreshTokenCookieService refreshTokenCookieService) {
+    public AuthController(AuthService authService,
+                          RefreshTokenCookieService refreshTokenCookieService,
+                          MicrosoftOAuthService microsoftOAuthService,
+                          MaribelProperties properties) {
         this.authService = authService;
         this.refreshTokenCookieService = refreshTokenCookieService;
+        this.microsoftOAuthService = microsoftOAuthService;
+        this.properties = properties;
     }
 
     @GetMapping("/microsoft/authorize-url")
@@ -43,12 +57,46 @@ public class AuthController {
     }
 
     @GetMapping("/microsoft/callback")
-    @Operation(summary = "Microsoft OAuth callback placeholder")
-    void microsoftCallbackPlaceholder() {
-        throw ApiException.badRequest(
-                "MICROSOFT_CALLBACK_NOT_IMPLEMENTED",
-                "Microsoft OAuth 토큰 교환과 Minecraft Profile 조회는 Azure 앱/비밀키 설정 후 구현해야 합니다."
-        );
+    @Operation(summary = "Microsoft OAuth 콜백 — 토큰 교환 후 프론트엔드로 리다이렉트")
+    void microsoftCallback(@RequestParam(required = false) String code,
+                           @RequestParam(required = false) String state,
+                           @RequestParam(required = false) String error,
+                           @RequestParam(name = "error_description", required = false) String errorDescription,
+                           HttpServletResponse response) throws IOException {
+        MaribelProperties.Microsoft microsoft = properties.getMicrosoft();
+
+        if (StringUtils.hasText(error)) {
+            response.sendRedirect(failureUrl(microsoft, error));
+            return;
+        }
+        if (!StringUtils.hasText(code)) {
+            response.sendRedirect(failureUrl(microsoft, "missing_code"));
+            return;
+        }
+
+        try {
+            MicrosoftIdentity identity = microsoftOAuthService.authenticate(code);
+            TokenResponse tokenResponse = authService.loginWithMicrosoft(identity);
+            refreshTokenCookieService.write(response, tokenResponse.refreshToken(), tokenResponse.refreshExpiresInSeconds());
+            response.sendRedirect(successUrl(microsoft, state));
+        } catch (ApiException exception) {
+            response.sendRedirect(failureUrl(microsoft, exception.getCode()));
+        }
+    }
+
+    private String successUrl(MaribelProperties.Microsoft microsoft, String state) {
+        String base = microsoft.getSuccessRedirectUri();
+        String url = base + (base.contains("?") ? "&" : "?") + "status=success";
+        if (StringUtils.hasText(state)) {
+            url += "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8);
+        }
+        return url;
+    }
+
+    private String failureUrl(MaribelProperties.Microsoft microsoft, String reason) {
+        String base = microsoft.getFailureRedirectUri();
+        return base + (base.contains("?") ? "&" : "?") + "error="
+                + URLEncoder.encode(reason == null ? "login_failed" : reason, StandardCharsets.UTF_8);
     }
 
     @PostMapping("/dev-login")
