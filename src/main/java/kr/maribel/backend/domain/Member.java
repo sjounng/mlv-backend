@@ -89,6 +89,20 @@ public class Member extends TimestampedEntity {
         this.marketingAgreed = marketingAgreed;
     }
 
+    public void suspend() {
+        if (this.status == UserStatus.WITHDRAWN) {
+            throw new IllegalStateException("withdrawn member cannot be suspended");
+        }
+        this.status = UserStatus.SUSPENDED;
+    }
+
+    public void reactivate() {
+        if (this.status == UserStatus.WITHDRAWN) {
+            throw new IllegalStateException("withdrawn member cannot be reactivated");
+        }
+        this.status = UserStatus.ACTIVE;
+    }
+
     public void withdraw() {
         this.status = UserStatus.WITHDRAWN;
         this.withdrawnAt = Instant.now();
