@@ -2,6 +2,7 @@ package kr.maribel.backend.config;
 
 import java.util.List;
 import kr.maribel.backend.security.JwtAuthenticationFilter;
+import kr.maribel.backend.security.WebpanelApiKeyFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,7 +25,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                            JwtAuthenticationFilter jwtAuthenticationFilter,
+                                            WebpanelApiKeyFilter webpanelApiKeyFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {
@@ -35,11 +38,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/microsoft/**", "/api/auth/dev-login", "/api/auth/refresh", "/api/auth/logout", "/api/admin/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/legal/**", "/api/shop/categories", "/api/shop/products/**", "/api/events").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/stella/webhook").permitAll()
-                        .requestMatchers("/api/webpanel/**").permitAll()
+                        .requestMatchers("/api/webpanel/**").hasRole("WEBPANEL")
                         .requestMatchers("/api/admin/**").hasAnyRole("OPERATOR", "SUPER_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+                .addFilterBefore(webpanelApiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
