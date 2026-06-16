@@ -20,14 +20,20 @@ import kr.maribel.backend.api.ApiDtos.InquiryResponse;
 import kr.maribel.backend.api.ApiDtos.MailResponse;
 import kr.maribel.backend.api.ApiDtos.MailTemplateRequest;
 import kr.maribel.backend.api.ApiDtos.MailTemplateResponse;
+import kr.maribel.backend.api.ApiDtos.PageResponse;
 import kr.maribel.backend.api.ApiDtos.ProductResponse;
 import kr.maribel.backend.api.ApiDtos.ProductUpsertRequest;
 import kr.maribel.backend.api.ApiDtos.RedeemCodeCreateRequest;
 import kr.maribel.backend.api.ApiDtos.RedeemCodeResponse;
 import kr.maribel.backend.api.ApiDtos.RefundProcessRequest;
 import kr.maribel.backend.api.ApiDtos.RefundResponse;
+import kr.maribel.backend.domain.AuditLog;
+import kr.maribel.backend.domain.CashCharge;
 import kr.maribel.backend.domain.Category;
+import kr.maribel.backend.domain.DomainEnums.ChargeStatus;
+import kr.maribel.backend.domain.DomainEnums.UserStatus;
 import kr.maribel.backend.domain.MailTemplate;
+import kr.maribel.backend.domain.Member;
 import kr.maribel.backend.domain.OutboundMail;
 import kr.maribel.backend.domain.Product;
 import kr.maribel.backend.security.AuthenticatedPrincipal;
@@ -36,12 +42,10 @@ import kr.maribel.backend.service.AuditService;
 import kr.maribel.backend.service.ContactService;
 import kr.maribel.backend.service.EventService;
 import kr.maribel.backend.service.MailService;
+import kr.maribel.backend.service.MemberService;
 import kr.maribel.backend.service.RefundService;
 import kr.maribel.backend.service.ShopService;
-import kr.maribel.backend.repository.AuditLogRepository;
-import kr.maribel.backend.repository.CashChargeRepository;
-import kr.maribel.backend.repository.CategoryRepository;
-import kr.maribel.backend.repository.MailTemplateRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -65,10 +69,7 @@ public class AdminController {
     private final RefundService refundService;
     private final ContactService contactService;
     private final AuditService auditService;
-    private final CategoryRepository categoryRepository;
-    private final MailTemplateRepository mailTemplateRepository;
-    private final CashChargeRepository cashChargeRepository;
-    private final AuditLogRepository auditLogRepository;
+    private final MemberService memberService;
 
     public AdminController(AdminQueryService adminQueryService,
                            ShopService shopService,
@@ -77,10 +78,7 @@ public class AdminController {
                            RefundService refundService,
                            ContactService contactService,
                            AuditService auditService,
-                           CategoryRepository categoryRepository,
-                           MailTemplateRepository mailTemplateRepository,
-                           CashChargeRepository cashChargeRepository,
-                           AuditLogRepository auditLogRepository) {
+                           MemberService memberService) {
         this.adminQueryService = adminQueryService;
         this.shopService = shopService;
         this.eventService = eventService;
@@ -88,10 +86,7 @@ public class AdminController {
         this.refundService = refundService;
         this.contactService = contactService;
         this.auditService = auditService;
-        this.categoryRepository = categoryRepository;
-        this.mailTemplateRepository = mailTemplateRepository;
-        this.cashChargeRepository = cashChargeRepository;
-        this.auditLogRepository = auditLogRepository;
+        this.memberService = memberService;
     }
 
     @GetMapping("/dashboard")
@@ -101,21 +96,45 @@ public class AdminController {
     }
 
     @GetMapping("/members")
-    @Operation(summary = "최근 회원 목록 조회")
-    List<AdminMemberResponse> members() {
-        return adminQueryService.recentMembers().stream().map(DtoMapper::adminMember).toList();
+    @Operation(summary = "회원 목록 검색 (상태/키워드 필터 + 페이지네이션)")
+    PageResponse<AdminMemberResponse> members(@RequestParam(required = false) UserStatus status,
+                                              @RequestParam(required = false) String keyword,
+                                              @RequestParam(defaultValue = "0") int page,
+                                              @RequestParam(defaultValue = "20") int size) {
+        Page<Member> members = adminQueryService.members(status, keyword, page, size);
+        return PageResponse.of(members, members.getContent().stream().map(DtoMapper::adminMember).toList());
+    }
+
+    @PatchMapping("/members/{id}/suspend")
+    @Operation(summary = "회원 제재 (일시정지)")
+    AdminMemberResponse suspendMember(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                      @PathVariable Long id) {
+        Member member = memberService.suspend(id);
+        auditService.record(principal, "Member", String.valueOf(member.getId()), "SUSPEND", null, member.getStatus().name());
+        return DtoMapper.adminMember(member);
+    }
+
+    @PatchMapping("/members/{id}/activate")
+    @Operation(summary = "회원 제재 해제 (활성화)")
+    AdminMemberResponse activateMember(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                       @PathVariable Long id) {
+        Member member = memberService.reactivate(id);
+        auditService.record(principal, "Member", String.valueOf(member.getId()), "ACTIVATE", null, member.getStatus().name());
+        return DtoMapper.adminMember(member);
     }
 
     @GetMapping("/audit-logs")
-    @Operation(summary = "감사 로그 조회")
-    List<AuditLogResponse> auditLogs() {
-        return auditLogRepository.findTop100ByOrderByCreatedAtDesc().stream().map(DtoMapper::auditLog).toList();
+    @Operation(summary = "감사 로그 조회 (페이지네이션)")
+    PageResponse<AuditLogResponse> auditLogs(@RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "50") int size) {
+        Page<AuditLog> logs = adminQueryService.auditLogs(page, size);
+        return PageResponse.of(logs, logs.getContent().stream().map(DtoMapper::auditLog).toList());
     }
 
     @GetMapping("/categories")
     @Operation(summary = "관리자 카테고리 목록 조회")
     List<CategoryResponse> categories() {
-        return categoryRepository.findAllByOrderBySortOrderAscNameAsc().stream().map(DtoMapper::category).toList();
+        return adminQueryService.categories().stream().map(DtoMapper::category).toList();
     }
 
     @PostMapping("/categories")
@@ -140,7 +159,7 @@ public class AdminController {
     @GetMapping("/mail-templates")
     @Operation(summary = "우편 템플릿 목록 조회")
     List<MailTemplateResponse> mailTemplates() {
-        return mailTemplateRepository.findAll().stream().map(DtoMapper::mailTemplate).toList();
+        return adminQueryService.mailTemplates().stream().map(DtoMapper::mailTemplate).toList();
     }
 
     @PostMapping("/mail-templates")
@@ -238,9 +257,12 @@ public class AdminController {
     }
 
     @GetMapping("/payments/charges")
-    @Operation(summary = "결제 충전 내역 조회")
-    List<ChargeHistoryResponse> charges() {
-        return cashChargeRepository.findAll().stream().map(DtoMapper::chargeHistory).toList();
+    @Operation(summary = "결제 충전 내역 조회 (상태 필터 + 페이지네이션)")
+    PageResponse<ChargeHistoryResponse> charges(@RequestParam(required = false) ChargeStatus status,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "20") int size) {
+        Page<CashCharge> charges = adminQueryService.charges(status, page, size);
+        return PageResponse.of(charges, charges.getContent().stream().map(DtoMapper::chargeHistory).toList());
     }
 
     @GetMapping("/refunds")

@@ -31,4 +31,33 @@ public class MemberService {
         Member member = getActiveMember(memberId);
         member.withdraw();
     }
+
+    /** 관리자 조회/제재용. 비활성 회원도 조회한다. */
+    @Transactional(readOnly = true)
+    public Member getMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND", "회원을 찾을 수 없습니다."));
+    }
+
+    @Transactional
+    public Member suspend(Long memberId) {
+        Member member = getMember(memberId);
+        try {
+            member.suspend();
+        } catch (IllegalStateException exception) {
+            throw ApiException.badRequest("MEMBER_NOT_SUSPENDABLE", "탈퇴한 회원은 제재할 수 없습니다.");
+        }
+        return member;
+    }
+
+    @Transactional
+    public Member reactivate(Long memberId) {
+        Member member = getMember(memberId);
+        try {
+            member.reactivate();
+        } catch (IllegalStateException exception) {
+            throw ApiException.badRequest("MEMBER_NOT_REACTIVATABLE", "탈퇴한 회원은 복구할 수 없습니다.");
+        }
+        return member;
+    }
 }

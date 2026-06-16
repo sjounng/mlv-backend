@@ -3,7 +3,11 @@ package kr.maribel.backend.repository;
 import java.util.Optional;
 import kr.maribel.backend.domain.DomainEnums.UserStatus;
 import kr.maribel.backend.domain.Member;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
@@ -12,4 +16,15 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByMinecraftUuid(String minecraftUuid);
 
     long countByStatus(UserStatus status);
+
+    @Query("""
+            select m from Member m
+            where (:status is null or m.status = :status)
+              and (:keyword is null
+                   or lower(m.minecraftUsername) like lower(concat('%', :keyword, '%'))
+                   or lower(m.minecraftUuid) like lower(concat('%', :keyword, '%')))
+            """)
+    Page<Member> search(@Param("status") UserStatus status,
+                        @Param("keyword") String keyword,
+                        Pageable pageable);
 }

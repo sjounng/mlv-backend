@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -181,6 +182,57 @@ class MaribelBackendFlowTest {
         mockMvc.perform(get("/api/me/mails").header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("SENT"));
+    }
+
+    @Test
+    void adminCanSearchMembersWithPaginationAndApplySanctions() throws Exception {
+        login(); // 회원 MaribelTester 생성
+        String adminToken = adminLogin();
+
+        // 키워드 검색 + 페이지네이션 응답 구조 확인
+        String membersJson = mockMvc.perform(get("/api/admin/members")
+                        .param("keyword", "Maribel")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.content[0].minecraftUsername").value("MaribelTester"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        Integer memberId = JsonPath.read(membersJson, "$.content[0].id");
+
+        // 제재(일시정지)
+        mockMvc.perform(patch("/api/admin/members/{id}/suspend", memberId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+
+        // 상태 필터로 조회되는지
+        mockMvc.perform(get("/api/admin/members")
+                        .param("status", "SUSPENDED")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(memberId));
+
+        // 제재 해제
+        mockMvc.perform(patch("/api/admin/members/{id}/activate", memberId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    private String adminLogin() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/admin/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"admin","password":"adminpass"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        return JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
     }
 
     private String login() throws Exception {
