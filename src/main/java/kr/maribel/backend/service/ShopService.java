@@ -190,8 +190,12 @@ public class ShopService {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(properties.getStella().getWebhookSecret().getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            String expected = Base64.getEncoder().encodeToString(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
-            return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), signatureHeader.getBytes(StandardCharsets.UTF_8));
+            byte[] expected = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            // 헤더의 Base64 시그니처를 디코딩한 원본 바이트끼리 constant-time 비교한다.
+            byte[] provided = Base64.getDecoder().decode(signatureHeader.trim());
+            return MessageDigest.isEqual(expected, provided);
+        } catch (IllegalArgumentException invalidBase64) {
+            return false;
         } catch (Exception exception) {
             throw new IllegalStateException("failed to verify stella signature", exception);
         }
