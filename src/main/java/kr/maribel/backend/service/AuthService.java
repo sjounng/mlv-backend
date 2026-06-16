@@ -10,6 +10,7 @@ import kr.maribel.backend.api.ApiDtos.TokenResponse;
 import kr.maribel.backend.api.ApiException;
 import kr.maribel.backend.config.MaribelProperties;
 import kr.maribel.backend.domain.AdminAccount;
+// MicrosoftIdentity 는 동일 패키지(kr.maribel.backend.service)라 별도 import 불필요
 import kr.maribel.backend.domain.CashBalance;
 import kr.maribel.backend.domain.DomainEnums.RefreshTokenOwnerType;
 import kr.maribel.backend.domain.DomainEnums.UserStatus;
@@ -56,15 +57,15 @@ public class AuthService {
     }
 
     public MicrosoftAuthorizeUrlResponse microsoftAuthorizeUrl(String state) {
-        String clientId = properties.getMicrosoft().getClientId();
-        if (clientId == null || clientId.isBlank()) {
+        MaribelProperties.Microsoft microsoft = properties.getMicrosoft();
+        if (!microsoft.isConfigured()) {
             return new MicrosoftAuthorizeUrlResponse(null, false);
         }
-        String encodedRedirect = URLEncoder.encode(properties.getMicrosoft().getRedirectUri(), StandardCharsets.UTF_8);
-        String encodedScopes = URLEncoder.encode(properties.getMicrosoft().getScopes(), StandardCharsets.UTF_8);
+        String encodedRedirect = URLEncoder.encode(microsoft.getRedirectUri(), StandardCharsets.UTF_8);
+        String encodedScopes = URLEncoder.encode(microsoft.getScopes(), StandardCharsets.UTF_8);
         String encodedState = URLEncoder.encode(state == null ? "" : state, StandardCharsets.UTF_8);
-        String url = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize"
-                + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+        String url = "https://login.microsoftonline.com/" + microsoft.getTenant() + "/oauth2/v2.0/authorize"
+                + "?client_id=" + URLEncoder.encode(microsoft.getClientId(), StandardCharsets.UTF_8)
                 + "&response_type=code"
                 + "&redirect_uri=" + encodedRedirect
                 + "&scope=" + encodedScopes
@@ -73,7 +74,32 @@ public class AuthService {
     }
 
     @Transactional
+    public TokenResponse loginWithMicrosoft(MicrosoftIdentity identity) {
+        Member member = memberRepository.findByMicrosoftSub(identity.microsoftSub())
+                .map(existing -> {
+                    existing.updateProfile(identity.minecraftUuid(), identity.minecraftUsername(), identity.email());
+                    if (existing.getAgreedTermsAt() == null) {
+                        existing.agreeRequiredTerms(false);
+                    }
+                    return existing;
+                })
+                .orElseGet(() -> {
+                    Member created = new Member(identity.microsoftSub(), identity.minecraftUuid(), identity.minecraftUsername(), identity.email());
+                    created.agreeRequiredTerms(false);
+                    return memberRepository.save(created);
+                });
+
+        cashBalanceRepository.findByMemberId(member.getId())
+                .orElseGet(() -> cashBalanceRepository.save(new CashBalance(member)));
+
+        return issueForMember(member);
+    }
+
+    @Transactional
     public TokenResponse devLogin(DevLoginRequest request) {
+        if (!properties.isDevLoginEnabled()) {
+            throw ApiException.notFound("DEV_LOGIN_DISABLED", "개발용 로그인이 비활성화되어 있습니다.");
+        }
         Member member = memberRepository.findByMicrosoftSub(request.microsoftSub())
                 .map(existing -> {
                     existing.updateProfile(request.minecraftUuid(), request.minecraftUsername(), request.email());

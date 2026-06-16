@@ -9,8 +9,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "maribel")
 public class MaribelProperties {
 
+    private boolean devLoginEnabled = true;
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
+
+    public boolean isDevLoginEnabled() {
+        return devLoginEnabled;
+    }
+
+    public void setDevLoginEnabled(boolean devLoginEnabled) {
+        this.devLoginEnabled = devLoginEnabled;
+    }
     private ServerStatus serverStatus = new ServerStatus();
     private Webpanel webpanel = new Webpanel();
     private Microsoft microsoft = new Microsoft();
@@ -220,8 +229,17 @@ public class MaribelProperties {
 
     public static class Microsoft {
         private String clientId = "";
+        private String clientSecret = "";
+        private String tenant = "consumers";
         private String redirectUri = "http://localhost:8080/api/auth/microsoft/callback";
-        private String scopes = "XboxLive.signin offline_access";
+        private String scopes = "XboxLive.signin offline_access openid email";
+        private String successRedirectUri = "http://localhost:3000/auth/callback";
+        private String failureRedirectUri = "http://localhost:3000/login";
+
+        public boolean isConfigured() {
+            return clientId != null && !clientId.isBlank()
+                    && clientSecret != null && !clientSecret.isBlank();
+        }
 
         public String getClientId() {
             return clientId;
@@ -229,6 +247,22 @@ public class MaribelProperties {
 
         public void setClientId(String clientId) {
             this.clientId = clientId;
+        }
+
+        public String getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        public String getTenant() {
+            return tenant;
+        }
+
+        public void setTenant(String tenant) {
+            this.tenant = tenant;
         }
 
         public String getRedirectUri() {
@@ -245,6 +279,22 @@ public class MaribelProperties {
 
         public void setScopes(String scopes) {
             this.scopes = scopes;
+        }
+
+        public String getSuccessRedirectUri() {
+            return successRedirectUri;
+        }
+
+        public void setSuccessRedirectUri(String successRedirectUri) {
+            this.successRedirectUri = successRedirectUri;
+        }
+
+        public String getFailureRedirectUri() {
+            return failureRedirectUri;
+        }
+
+        public void setFailureRedirectUri(String failureRedirectUri) {
+            this.failureRedirectUri = failureRedirectUri;
         }
     }
 
