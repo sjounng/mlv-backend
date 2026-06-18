@@ -42,6 +42,18 @@ public class Popup extends TimestampedEntity {
         this.endAt = endAt;
     }
 
+    public void update(String imageUrl, String linkUrl, Instant startAt, Instant endAt, boolean active) {
+        this.imageUrl = imageUrl;
+        this.linkUrl = linkUrl;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.active = active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public Long getId() {
         return id;
     }

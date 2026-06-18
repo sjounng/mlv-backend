@@ -21,12 +21,16 @@ import kr.maribel.backend.api.ApiDtos.MailResponse;
 import kr.maribel.backend.api.ApiDtos.MailTemplateRequest;
 import kr.maribel.backend.api.ApiDtos.MailTemplateResponse;
 import kr.maribel.backend.api.ApiDtos.PageResponse;
+import kr.maribel.backend.api.ApiDtos.PopupRequest;
+import kr.maribel.backend.api.ApiDtos.PopupResponse;
 import kr.maribel.backend.api.ApiDtos.ProductResponse;
 import kr.maribel.backend.api.ApiDtos.ProductUpsertRequest;
 import kr.maribel.backend.api.ApiDtos.RedeemCodeCreateRequest;
 import kr.maribel.backend.api.ApiDtos.RedeemCodeResponse;
 import kr.maribel.backend.api.ApiDtos.RefundProcessRequest;
 import kr.maribel.backend.api.ApiDtos.RefundResponse;
+import kr.maribel.backend.api.ApiDtos.TermsCreateRequest;
+import kr.maribel.backend.api.ApiDtos.TermsResponse;
 import kr.maribel.backend.domain.AuditLog;
 import kr.maribel.backend.domain.CashCharge;
 import kr.maribel.backend.domain.Category;
@@ -44,6 +48,8 @@ import kr.maribel.backend.service.EventService;
 import kr.maribel.backend.service.MailService;
 import kr.maribel.backend.service.MemberService;
 import kr.maribel.backend.service.RefundService;
+import kr.maribel.backend.service.LegalService;
+import kr.maribel.backend.service.PopupService;
 import kr.maribel.backend.service.ShopService;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -70,6 +76,8 @@ public class AdminController {
     private final ContactService contactService;
     private final AuditService auditService;
     private final MemberService memberService;
+    private final PopupService popupService;
+    private final LegalService legalService;
 
     public AdminController(AdminQueryService adminQueryService,
                            ShopService shopService,
@@ -78,7 +86,9 @@ public class AdminController {
                            RefundService refundService,
                            ContactService contactService,
                            AuditService auditService,
-                           MemberService memberService) {
+                           MemberService memberService,
+                           PopupService popupService,
+                           LegalService legalService) {
         this.adminQueryService = adminQueryService;
         this.shopService = shopService;
         this.eventService = eventService;
@@ -87,6 +97,8 @@ public class AdminController {
         this.contactService = contactService;
         this.auditService = auditService;
         this.memberService = memberService;
+        this.popupService = popupService;
+        this.legalService = legalService;
     }
 
     @GetMapping("/dashboard")
@@ -204,6 +216,12 @@ public class AdminController {
         return DtoMapper.product(product);
     }
 
+    @GetMapping("/events")
+    @Operation(summary = "전체 이벤트 목록 조회")
+    List<EventResponse> events() {
+        return eventService.allEvents().stream().map(DtoMapper::event).toList();
+    }
+
     @PostMapping("/events")
     @Operation(summary = "이벤트 생성")
     EventResponse createEvent(@AuthenticationPrincipal AuthenticatedPrincipal principal,
@@ -295,5 +313,55 @@ public class AdminController {
         var inquiry = contactService.reply(id, principal.adminId(), request.content());
         auditService.record(principal, "ContactInquiry", String.valueOf(inquiry.getId()), "REPLY", null, inquiry.getStatus().name());
         return DtoMapper.inquiry(inquiry);
+    }
+
+    @GetMapping("/popups")
+    @Operation(summary = "팝업/배너 목록 조회")
+    List<PopupResponse> popups() {
+        return popupService.all().stream().map(DtoMapper::popup).toList();
+    }
+
+    @PostMapping("/popups")
+    @Operation(summary = "팝업/배너 등록")
+    PopupResponse createPopup(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                              @Valid @RequestBody PopupRequest request) {
+        var popup = popupService.create(request);
+        auditService.record(principal, "Popup", String.valueOf(popup.getId()), "CREATE", null, popup.getImageUrl());
+        return DtoMapper.popup(popup);
+    }
+
+    @PatchMapping("/popups/{id}")
+    @Operation(summary = "팝업/배너 수정")
+    PopupResponse updatePopup(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                              @PathVariable Long id,
+                              @Valid @RequestBody PopupRequest request) {
+        var popup = popupService.update(id, request);
+        auditService.record(principal, "Popup", String.valueOf(popup.getId()), "UPDATE", null, popup.getImageUrl());
+        return DtoMapper.popup(popup);
+    }
+
+    @PatchMapping("/popups/{id}/active")
+    @Operation(summary = "팝업/배너 노출 토글")
+    PopupResponse setPopupActive(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                 @PathVariable Long id,
+                                 @RequestParam boolean active) {
+        var popup = popupService.setActive(id, active);
+        auditService.record(principal, "Popup", String.valueOf(popup.getId()), "SET_ACTIVE", null, String.valueOf(active));
+        return DtoMapper.popup(popup);
+    }
+
+    @GetMapping("/terms")
+    @Operation(summary = "약관/방침 전체 버전 조회")
+    List<TermsResponse> terms() {
+        return legalService.all().stream().map(DtoMapper::terms).toList();
+    }
+
+    @PostMapping("/terms")
+    @Operation(summary = "약관/방침 새 버전 게시")
+    TermsResponse publishTerms(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                               @Valid @RequestBody TermsCreateRequest request) {
+        var terms = legalService.publish(request.type(), request.version(), request.content());
+        auditService.record(principal, "Terms", String.valueOf(terms.getId()), "PUBLISH", null, terms.getType() + " " + terms.getVersion());
+        return DtoMapper.terms(terms);
     }
 }

@@ -12,4 +12,6 @@ public interface TermsDocumentRepository extends JpaRepository<TermsDocument, Lo
     Optional<TermsDocument> findFirstByTypeAndPublishedAtLessThanEqualOrderByPublishedAtDesc(TermsType type, Instant publishedAt);
 
     List<TermsDocument> findByTypeOrderByPublishedAtDesc(TermsType type);
+
+    List<TermsDocument> findAllByOrderByPublishedAtDesc();
 }

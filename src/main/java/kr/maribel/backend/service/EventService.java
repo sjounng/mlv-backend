@@ -54,6 +54,11 @@ public class EventService {
         return eventRepository.findActiveEvents(Instant.now());
     }
 
+    @Transactional(readOnly = true)
+    public List<MaribelEvent> allEvents() {
+        return eventRepository.findAllByOrderByStartAtDesc();
+    }
+
     @Transactional
     public EventParticipation claim(Member member, Long eventId) {
         MaribelEvent event = eventRepository.findWithMailTemplateById(eventId)

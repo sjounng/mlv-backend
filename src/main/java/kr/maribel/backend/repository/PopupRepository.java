@@ -15,4 +15,6 @@ public interface PopupRepository extends JpaRepository<Popup, Long> {
             order by p.createdAt desc
             """)
     List<Popup> findVisible(@Param("now") Instant now);
+
+    List<Popup> findAllByOrderByStartAtDesc();
 }
