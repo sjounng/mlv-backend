@@ -28,4 +28,14 @@ public class LegalService {
     public List<TermsDocument> history(TermsType type) {
         return termsDocumentRepository.findByTypeOrderByPublishedAtDesc(type);
     }
+
+    @Transactional(readOnly = true)
+    public List<TermsDocument> all() {
+        return termsDocumentRepository.findAllByOrderByPublishedAtDesc();
+    }
+
+    @Transactional
+    public TermsDocument publish(TermsType type, String version, String content) {
+        return termsDocumentRepository.save(new TermsDocument(type, version, content, Instant.now()));
+    }
 }

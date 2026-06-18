@@ -15,6 +15,9 @@ public interface MaribelEventRepository extends JpaRepository<MaribelEvent, Long
     Optional<MaribelEvent> findWithMailTemplateById(Long id);
 
     @EntityGraph(attributePaths = "mailTemplate")
+    List<MaribelEvent> findAllByOrderByStartAtDesc();
+
+    @EntityGraph(attributePaths = "mailTemplate")
     @Query("""
             select e from MaribelEvent e
             where e.active = true and e.startAt <= :now and e.endAt >= :now

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.maribel.backend.api.ApiDtos.PopupResponse;
 import kr.maribel.backend.api.ApiDtos.ServerStatusResponse;
 import kr.maribel.backend.config.MaribelProperties;
 import kr.maribel.backend.repository.PopupRepository;
@@ -36,7 +37,7 @@ public class PublicController {
 
     @GetMapping("/popups")
     @Operation(summary = "현재 노출 팝업 조회")
-    List<?> popups() {
-        return popupRepository.findVisible(Instant.now());
+    List<PopupResponse> popups() {
+        return popupRepository.findVisible(Instant.now()).stream().map(DtoMapper::popup).toList();
     }
 }

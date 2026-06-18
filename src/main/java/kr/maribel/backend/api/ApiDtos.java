@@ -114,6 +114,33 @@ public final class ApiDtos {
     ) {
     }
 
+    public record TermsCreateRequest(
+            @NotNull TermsType type,
+            @NotBlank @Size(max = 40) String version,
+            @NotBlank String content
+    ) {
+    }
+
+    public record PopupRequest(
+            @NotBlank @Size(max = 500) String imageUrl,
+            @Size(max = 500) String linkUrl,
+            @NotNull Instant startAt,
+            @NotNull Instant endAt,
+            boolean active
+    ) {
+    }
+
+    public record PopupResponse(
+            Long id,
+            String imageUrl,
+            String linkUrl,
+            Instant startAt,
+            Instant endAt,
+            boolean active,
+            Instant createdAt
+    ) {
+    }
+
     public record CategoryRequest(
             @NotBlank @Size(max = 80) String name,
             int sortOrder,
