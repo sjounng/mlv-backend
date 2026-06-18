@@ -5,6 +5,9 @@ server:
 spring:
   application:
     name: maribel-backend
+  # 로컬 개발용 비밀값(.env)을 properties 형식으로 읽는다. 파일이 없으면 무시(optional).
+  config:
+    import: optional:file:.env[.properties]
   data:
     redis:
       host: ${REDIS_HOST:localhost}
