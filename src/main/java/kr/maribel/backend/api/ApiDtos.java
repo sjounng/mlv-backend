@@ -140,6 +140,9 @@ public final class ApiDtos {
     ) {
     }
 
+    public record UploadResponse(String url) {
+    }
+
     public record PopupResponse(
             Long id,
             String imageUrl,

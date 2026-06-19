@@ -10,8 +10,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MaribelProperties {
 
     private boolean devLoginEnabled = true;
+    private Upload upload = new Upload();
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
+
+    public Upload getUpload() {
+        return upload;
+    }
+
+    public void setUpload(Upload upload) {
+        this.upload = upload;
+    }
 
     public boolean isDevLoginEnabled() {
         return devLoginEnabled;
@@ -325,6 +334,27 @@ public class MaribelProperties {
 
         public void setPaymentBaseUrl(String paymentBaseUrl) {
             this.paymentBaseUrl = paymentBaseUrl;
+        }
+    }
+
+    public static class Upload {
+        private String dir = "./uploads";
+        private String publicBaseUrl = "http://localhost:8080";
+
+        public String getDir() {
+            return dir;
+        }
+
+        public void setDir(String dir) {
+            this.dir = dir;
+        }
+
+        public String getPublicBaseUrl() {
+            return publicBaseUrl;
+        }
+
+        public void setPublicBaseUrl(String publicBaseUrl) {
+            this.publicBaseUrl = publicBaseUrl;
         }
     }
 

@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info", "/h2-console/**", "/v3/api-docs/**", "/scalar", "/scalar/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/auth/microsoft/**", "/api/auth/dev-login", "/api/auth/refresh", "/api/auth/logout", "/api/admin/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/legal/**", "/api/shop/categories", "/api/shop/products/**", "/api/events").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/stella/webhook").permitAll()

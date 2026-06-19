@@ -35,6 +35,10 @@ spring:
           time_zone: UTC
   jackson:
     default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 management:
   endpoints:
@@ -67,6 +71,9 @@ scalar:
 maribel:
   # 운영 환경에서는 반드시 false 로 설정한다 (MARIBEL_DEV_LOGIN_ENABLED=false).
   dev-login-enabled: ${MARIBEL_DEV_LOGIN_ENABLED:true}
+  upload:
+    dir: ${MARIBEL_UPLOAD_DIR:./uploads}
+    public-base-url: ${MARIBEL_UPLOAD_PUBLIC_BASE_URL:http://localhost:8080}
   jwt:
     issuer: maribel-backend
     secret: ${MARIBEL_JWT_SECRET:dev-only-change-this-secret-before-production-please}
