@@ -143,6 +143,22 @@ public final class ApiDtos {
     public record UploadResponse(String url) {
     }
 
+    public record NoticeRequest(
+            @NotBlank @Size(max = 160) String title,
+            @NotBlank String content,
+            boolean pinned
+    ) {
+    }
+
+    public record NoticeResponse(
+            Long id,
+            String title,
+            String content,
+            boolean pinned,
+            Instant createdAt
+    ) {
+    }
+
     public record PopupResponse(
             Long id,
             String imageUrl,

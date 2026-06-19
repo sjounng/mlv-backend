@@ -4,10 +4,12 @@ import java.time.Instant;
 import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.maribel.backend.api.ApiDtos.NoticeResponse;
 import kr.maribel.backend.api.ApiDtos.PopupResponse;
 import kr.maribel.backend.api.ApiDtos.ServerStatusResponse;
 import kr.maribel.backend.config.MaribelProperties;
 import kr.maribel.backend.repository.PopupRepository;
+import kr.maribel.backend.service.NoticeService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,10 +21,18 @@ public class PublicController {
 
     private final MaribelProperties properties;
     private final PopupRepository popupRepository;
+    private final NoticeService noticeService;
 
-    public PublicController(MaribelProperties properties, PopupRepository popupRepository) {
+    public PublicController(MaribelProperties properties, PopupRepository popupRepository, NoticeService noticeService) {
         this.properties = properties;
         this.popupRepository = popupRepository;
+        this.noticeService = noticeService;
+    }
+
+    @GetMapping("/notices")
+    @Operation(summary = "공지사항 목록 조회")
+    List<NoticeResponse> notices() {
+        return noticeService.all().stream().map(DtoMapper::notice).toList();
     }
 
     @GetMapping("/server-status")

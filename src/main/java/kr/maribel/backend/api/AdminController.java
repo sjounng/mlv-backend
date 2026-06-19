@@ -20,6 +20,8 @@ import kr.maribel.backend.api.ApiDtos.InquiryResponse;
 import kr.maribel.backend.api.ApiDtos.MailResponse;
 import kr.maribel.backend.api.ApiDtos.MailTemplateRequest;
 import kr.maribel.backend.api.ApiDtos.MailTemplateResponse;
+import kr.maribel.backend.api.ApiDtos.NoticeRequest;
+import kr.maribel.backend.api.ApiDtos.NoticeResponse;
 import kr.maribel.backend.api.ApiDtos.PageResponse;
 import kr.maribel.backend.api.ApiDtos.PopupRequest;
 import kr.maribel.backend.api.ApiDtos.PopupResponse;
@@ -47,6 +49,7 @@ import kr.maribel.backend.service.ContactService;
 import kr.maribel.backend.service.EventService;
 import kr.maribel.backend.service.MailService;
 import kr.maribel.backend.service.MemberService;
+import kr.maribel.backend.service.NoticeService;
 import kr.maribel.backend.service.RefundService;
 import kr.maribel.backend.service.LegalService;
 import kr.maribel.backend.service.PopupService;
@@ -54,6 +57,7 @@ import kr.maribel.backend.service.ShopService;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -78,6 +82,7 @@ public class AdminController {
     private final MemberService memberService;
     private final PopupService popupService;
     private final LegalService legalService;
+    private final NoticeService noticeService;
 
     public AdminController(AdminQueryService adminQueryService,
                            ShopService shopService,
@@ -88,7 +93,8 @@ public class AdminController {
                            AuditService auditService,
                            MemberService memberService,
                            PopupService popupService,
-                           LegalService legalService) {
+                           LegalService legalService,
+                           NoticeService noticeService) {
         this.adminQueryService = adminQueryService;
         this.shopService = shopService;
         this.eventService = eventService;
@@ -99,6 +105,7 @@ public class AdminController {
         this.memberService = memberService;
         this.popupService = popupService;
         this.legalService = legalService;
+        this.noticeService = noticeService;
     }
 
     @GetMapping("/dashboard")
@@ -348,6 +355,38 @@ public class AdminController {
         var popup = popupService.setActive(id, active);
         auditService.record(principal, "Popup", String.valueOf(popup.getId()), "SET_ACTIVE", null, String.valueOf(active));
         return DtoMapper.popup(popup);
+    }
+
+    @GetMapping("/notices")
+    @Operation(summary = "공지사항 목록 조회")
+    List<NoticeResponse> notices() {
+        return noticeService.all().stream().map(DtoMapper::notice).toList();
+    }
+
+    @PostMapping("/notices")
+    @Operation(summary = "공지사항 등록")
+    NoticeResponse createNotice(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                @Valid @RequestBody NoticeRequest request) {
+        var notice = noticeService.create(request);
+        auditService.record(principal, "Notice", String.valueOf(notice.getId()), "CREATE", null, notice.getTitle());
+        return DtoMapper.notice(notice);
+    }
+
+    @PatchMapping("/notices/{id}")
+    @Operation(summary = "공지사항 수정")
+    NoticeResponse updateNotice(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                @PathVariable Long id,
+                                @Valid @RequestBody NoticeRequest request) {
+        var notice = noticeService.update(id, request);
+        auditService.record(principal, "Notice", String.valueOf(notice.getId()), "UPDATE", null, notice.getTitle());
+        return DtoMapper.notice(notice);
+    }
+
+    @DeleteMapping("/notices/{id}")
+    @Operation(summary = "공지사항 삭제")
+    void deleteNotice(@AuthenticationPrincipal AuthenticatedPrincipal principal, @PathVariable Long id) {
+        noticeService.delete(id);
+        auditService.record(principal, "Notice", String.valueOf(id), "DELETE", null, null);
     }
 
     @GetMapping("/terms")
