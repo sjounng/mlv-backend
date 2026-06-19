@@ -114,6 +114,16 @@ public final class ApiDtos {
     ) {
     }
 
+    public record AttendanceResponse(
+            Long eventId,
+            String eventName,
+            String today,
+            boolean todayClaimed,
+            List<String> claimedDates,
+            boolean claimable
+    ) {
+    }
+
     public record TermsCreateRequest(
             @NotNull TermsType type,
             @NotBlank @Size(max = 40) String version,
