@@ -11,6 +11,7 @@ import kr.maribel.backend.api.ApiDtos.EventResponse;
 import kr.maribel.backend.api.ApiDtos.InquiryResponse;
 import kr.maribel.backend.api.ApiDtos.MailResponse;
 import kr.maribel.backend.api.ApiDtos.MailTemplateResponse;
+import kr.maribel.backend.api.ApiDtos.NoticeResponse;
 import kr.maribel.backend.api.ApiDtos.PopupResponse;
 import kr.maribel.backend.api.ApiDtos.ProductResponse;
 import kr.maribel.backend.api.ApiDtos.ProfileResponse;
@@ -28,6 +29,7 @@ import kr.maribel.backend.domain.ContactInquiry;
 import kr.maribel.backend.domain.MailTemplate;
 import kr.maribel.backend.domain.MaribelEvent;
 import kr.maribel.backend.domain.Member;
+import kr.maribel.backend.domain.Notice;
 import kr.maribel.backend.domain.OutboundMail;
 import kr.maribel.backend.domain.Popup;
 import kr.maribel.backend.domain.Product;
@@ -220,6 +222,16 @@ public final class DtoMapper {
                 terms.getVersion(),
                 terms.getContent(),
                 terms.getPublishedAt()
+        );
+    }
+
+    public static NoticeResponse notice(Notice notice) {
+        return new NoticeResponse(
+                notice.getId(),
+                notice.getTitle(),
+                notice.getContent(),
+                notice.isPinned(),
+                notice.getCreatedAt()
         );
     }
 
