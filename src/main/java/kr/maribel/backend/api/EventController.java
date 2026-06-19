@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import kr.maribel.backend.config.OpenApiConfig;
+import kr.maribel.backend.api.ApiDtos.AttendanceResponse;
 import kr.maribel.backend.api.ApiDtos.ClaimResponse;
 import kr.maribel.backend.api.ApiDtos.EventResponse;
 import kr.maribel.backend.api.ApiDtos.RedeemUseRequest;
@@ -38,6 +39,13 @@ public class EventController {
     @Operation(summary = "진행 중 이벤트 목록 조회")
     List<EventResponse> events() {
         return eventService.activeEvents().stream().map(DtoMapper::event).toList();
+    }
+
+    @GetMapping("/api/events/attendance")
+    @Operation(summary = "출석 보드 조회 (이번 달)", security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH))
+    AttendanceResponse attendance(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
+        Member member = memberService.getActiveMember(principal.memberId());
+        return eventService.attendanceBoard(member);
     }
 
     @PostMapping("/api/events/{id}/claim")

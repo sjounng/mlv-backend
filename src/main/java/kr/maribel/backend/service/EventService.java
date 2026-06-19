@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
+import kr.maribel.backend.api.ApiDtos.AttendanceResponse;
 import kr.maribel.backend.api.ApiDtos.EventUpsertRequest;
 import kr.maribel.backend.api.ApiException;
 import kr.maribel.backend.domain.DomainEnums.EventType;
@@ -57,6 +59,33 @@ public class EventService {
     @Transactional(readOnly = true)
     public List<MaribelEvent> allEvents() {
         return eventRepository.findAllByOrderByStartAtDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public AttendanceResponse attendanceBoard(Member member) {
+        Instant now = Instant.now();
+        String today = LocalDate.now(SERVICE_ZONE).toString();
+        Optional<MaribelEvent> attendanceEvent = eventRepository.findActiveEvents(now).stream()
+                .filter(e -> e.getType() == EventType.ATTENDANCE)
+                .findFirst();
+        if (attendanceEvent.isEmpty()) {
+            return new AttendanceResponse(null, null, today, false, List.of(), false);
+        }
+        MaribelEvent event = attendanceEvent.get();
+        String monthPrefix = today.substring(0, 7); // YYYY-MM
+        List<String> claimedThisMonth = participationRepository.findClaimKeys(member.getId(), event.getId()).stream()
+                .filter(key -> key.startsWith(monthPrefix))
+                .sorted()
+                .toList();
+        boolean todayClaimed = claimedThisMonth.contains(today);
+        return new AttendanceResponse(
+                event.getId(),
+                event.getName(),
+                today,
+                todayClaimed,
+                claimedThisMonth,
+                event.isClaimable(now) && !todayClaimed
+        );
     }
 
     @Transactional
