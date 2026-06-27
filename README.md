@@ -8,12 +8,20 @@
 - Spring Boot 4.0.6
 - Spring MVC, Spring Security, Spring Data JPA
 - Redis-backed refresh token sessions
-- H2 local DB by default, PostgreSQL runtime driver included
+- PostgreSQL local/production DB
+- H2 test DB
 - JWT access token + HttpOnly refresh token cookie
 
 ## Run
 
-Redis가 필요합니다. 로컬에서는 먼저 Redis를 띄운 뒤 애플리케이션을 실행하세요.
+PostgreSQL과 Redis가 필요합니다. 로컬에서는 먼저 DB와 Redis를 준비한 뒤 애플리케이션을 실행하세요.
+
+```bash
+psql -d postgres -c "CREATE ROLE maribel WITH LOGIN PASSWORD 'maribel_dev_password';"
+createdb -O maribel maribel
+```
+
+`.env.example`을 `.env`로 복사하고 로컬 DB 비밀번호를 채우세요.
 
 ```bash
 redis-server
