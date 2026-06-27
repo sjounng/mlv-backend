@@ -20,7 +20,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("""
             select m from Member m
             where (:status is null or m.status = :status)
-              and (:keyword is null
+              and (:keyword = ''
                    or lower(m.minecraftUsername) like lower(concat('%', :keyword, '%'))
                    or lower(m.minecraftUuid) like lower(concat('%', :keyword, '%')))
             """)

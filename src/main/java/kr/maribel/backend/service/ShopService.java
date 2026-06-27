@@ -70,7 +70,7 @@ public class ShopService {
 
     @Transactional(readOnly = true)
     public List<Product> searchProducts(Long categoryId, Boolean recommended, Boolean newBadge, Long minPrice, Long maxPrice, String keyword, boolean activeOnly) {
-        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : null;
+        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : "";
         return productRepository.search(categoryId, activeOnly, recommended, newBadge, minPrice, maxPrice, normalizedKeyword);
     }
 

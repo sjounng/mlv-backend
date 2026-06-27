@@ -22,7 +22,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               and (:newBadge is null or p.newBadge = :newBadge)
               and (:minPrice is null or p.price >= :minPrice)
               and (:maxPrice is null or p.price <= :maxPrice)
-              and (:keyword is null or lower(p.name) like lower(concat('%', :keyword, '%')))
+              and (:keyword = '' or lower(p.name) like lower(concat('%', :keyword, '%')))
             order by p.category.sortOrder asc, p.id desc
             """)
     List<Product> search(@Param("categoryId") Long categoryId,

@@ -75,7 +75,7 @@ public class AdminQueryService {
     @Transactional(readOnly = true)
     public Page<Member> members(UserStatus status, String keyword, int page, int size) {
         Pageable pageable = pageable(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : null;
+        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : "";
         return memberRepository.search(status, normalizedKeyword, pageable);
     }
 
