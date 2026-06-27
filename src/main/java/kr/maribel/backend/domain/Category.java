@@ -29,8 +29,13 @@ public class Category extends TimestampedEntity {
     }
 
     public Category(String name, int sortOrder) {
+        this(name, sortOrder, true);
+    }
+
+    public Category(String name, int sortOrder, boolean active) {
         this.name = name;
         this.sortOrder = sortOrder;
+        this.active = active;
     }
 
     public void update(String name, int sortOrder, boolean active) {

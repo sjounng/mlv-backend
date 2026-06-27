@@ -145,7 +145,7 @@ public class ShopService {
     @Transactional
     public Category upsertCategory(Long id, String name, int sortOrder, boolean active) {
         if (id == null) {
-            return categoryRepository.save(new Category(name, sortOrder));
+            return categoryRepository.save(new Category(name, sortOrder, active));
         }
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("CATEGORY_NOT_FOUND", "카테고리를 찾을 수 없습니다."));
