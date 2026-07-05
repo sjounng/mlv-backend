@@ -24,10 +24,14 @@ spring:
     console:
       enabled: ${H2_CONSOLE_ENABLED:false}
       path: /h2-console
+  # 스키마는 Flyway 마이그레이션(db/migration)으로 관리한다.
+  # 기존 DB(하이버네이트 update 로 생성)는 baseline-on-migrate 로 V1 을 건너뛰고 합류한다.
+  flyway:
+    baseline-on-migrate: true
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     properties:
       hibernate:
         format_sql: false
@@ -104,6 +108,8 @@ maribel:
     merchant-id: ${STELLA_MERCHANT_ID:}
     webhook-secret: ${STELLA_WEBHOOK_SECRET:dev-stella-secret-change-me}
     payment-base-url: ${STELLA_PAYMENT_BASE_URL:https://stella.example.invalid/pay}
+    # 운영 환경에서는 반드시 false 로 설정한다 (STELLA_ALLOW_UNSIGNED_WEBHOOK=false).
+    allow-unsigned-webhook: ${STELLA_ALLOW_UNSIGNED_WEBHOOK:true}
   bootstrap-admin:
     username: ${MARIBEL_BOOTSTRAP_ADMIN_USERNAME:admin}
     password: ${MARIBEL_BOOTSTRAP_ADMIN_PASSWORD:change-me-now}

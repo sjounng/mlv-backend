@@ -1,4 +1,7 @@
 spring:
+  # H2 테스트는 Hibernate create-drop 으로 스키마를 만들고, Flyway(Postgres 전용 SQL)는 끈다.
+  flyway:
+    enabled: false
   datasource:
     url: jdbc:h2:mem:maribel-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver

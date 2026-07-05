@@ -52,6 +52,9 @@ public class SecretsHardeningCheck implements ApplicationRunner {
         if (properties.isDevLoginEnabled()) {
             violations.add("MARIBEL_DEV_LOGIN_ENABLED(=false 필요)");
         }
+        if (properties.getStella().isAllowUnsignedWebhook()) {
+            violations.add("STELLA_ALLOW_UNSIGNED_WEBHOOK(=false 필요)");
+        }
 
         if (!violations.isEmpty()) {
             throw new IllegalStateException(

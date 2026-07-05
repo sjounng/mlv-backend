@@ -7,6 +7,7 @@
 - Java 21
 - Spring Boot 4.0.6
 - Spring MVC, Spring Security, Spring Data JPA
+- Flyway database migrations (`src/main/resources/db/migration`)
 - Redis-backed refresh token sessions
 - PostgreSQL local/production DB
 - H2 test DB
@@ -38,7 +39,13 @@ redis-server
 - username: `admin`
 - password: `change-me-now`
 
-운영 전에는 반드시 `MARIBEL_BOOTSTRAP_ADMIN_PASSWORD`, `MARIBEL_JWT_SECRET`, `MARIBEL_WEBPANEL_API_KEY`, `STELLA_WEBHOOK_SECRET`, `REDIS_HOST`, `REDIS_PASSWORD`를 환경변수로 바꿔주세요. HTTPS 운영 환경에서는 `MARIBEL_REFRESH_COOKIE_SECURE=true`로 설정하세요.
+운영 전에는 반드시 `MARIBEL_BOOTSTRAP_ADMIN_PASSWORD`, `MARIBEL_JWT_SECRET`, `MARIBEL_WEBPANEL_API_KEY`, `STELLA_WEBHOOK_SECRET`, `STELLA_ALLOW_UNSIGNED_WEBHOOK=false`, `REDIS_HOST`, `REDIS_PASSWORD`를 환경변수로 바꿔주세요. HTTPS 운영 환경에서는 `MARIBEL_REFRESH_COOKIE_SECURE=true`로 설정하세요.
+
+## Database Migrations
+
+- 스키마는 Flyway 로 관리합니다. 변경 시 `src/main/resources/db/migration/V{n}__{설명}.sql` 을 추가하세요.
+- `ddl-auto` 기본값은 `validate` 입니다. 엔티티와 마이그레이션이 어긋나면 부팅이 실패합니다.
+- 기존 로컬 DB(과거 `ddl-auto=update` 로 생성)는 첫 부팅 때 `baseline-on-migrate` 로 V1 을 건너뛰고 자동 합류합니다.
 
 ## Token Policy
 

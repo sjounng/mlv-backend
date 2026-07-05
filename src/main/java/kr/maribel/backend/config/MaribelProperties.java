@@ -311,6 +311,16 @@ public class MaribelProperties {
         private String merchantId = "";
         private String webhookSecret = "dev-stella-secret-change-me";
         private String paymentBaseUrl = "https://stella.example.invalid/pay";
+        // 로컬 개발에서 서명 헤더 없이 웹훅을 테스트하기 위한 스위치. 운영(prod)에서는 반드시 false.
+        private boolean allowUnsignedWebhook = true;
+
+        public boolean isAllowUnsignedWebhook() {
+            return allowUnsignedWebhook;
+        }
+
+        public void setAllowUnsignedWebhook(boolean allowUnsignedWebhook) {
+            this.allowUnsignedWebhook = allowUnsignedWebhook;
+        }
 
         public String getMerchantId() {
             return merchantId;

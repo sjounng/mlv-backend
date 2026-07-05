@@ -128,12 +128,21 @@ public class ShopService {
 
     @Transactional
     public PurchaseOrder purchase(Member member, PurchaseRequest request) {
-        Product product = getProduct(request.productId(), true);
+        // 동시 구매 시 재고 초과 판매를 막기 위해 상품 행을 잠근 뒤 차감한다.
+        Product product = productRepository.findByIdForUpdate(request.productId())
+                .orElseThrow(() -> ApiException.notFound("PRODUCT_NOT_FOUND", "상품을 찾을 수 없습니다."));
+        if (!product.isActive()) {
+            throw ApiException.notFound("PRODUCT_NOT_FOUND", "상품을 찾을 수 없습니다.");
+        }
         int quantity = request.quantity();
         long totalPrice = product.getPrice() * quantity;
         String orderNumber = "po_" + UUID.randomUUID().toString().replace("-", "");
 
-        product.decreaseStock(quantity);
+        try {
+            product.decreaseStock(quantity);
+        } catch (IllegalStateException exception) {
+            throw ApiException.badRequest("INSUFFICIENT_STOCK", "상품 재고가 부족합니다.");
+        }
         cashService.debit(member, totalPrice, orderNumber, "Product purchase: " + product.getName());
 
         PurchaseOrder order = purchaseOrderRepository.save(new PurchaseOrder(orderNumber, member, product, quantity, totalPrice));
@@ -184,7 +193,7 @@ public class ShopService {
 
     private boolean isValidStellaSignature(StellaWebhookRequest request, String signatureHeader) {
         if (!StringUtils.hasText(signatureHeader)) {
-            return properties.getStella().getWebhookSecret().startsWith("dev-");
+            return properties.getStella().isAllowUnsignedWebhook();
         }
         String payload = request.merchantOrderId() + ":" + request.stellaPaymentId() + ":" + request.status() + ":" + request.paidAmountKrw();
         try {
