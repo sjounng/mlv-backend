@@ -1,9 +1,10 @@
 package kr.maribel.backend.repository;
 
 import jakarta.persistence.LockModeType;
-import java.util.List;
 import java.util.Optional;
 import kr.maribel.backend.domain.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -31,11 +32,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               and (:keyword = '' or lower(p.name) like lower(concat('%', :keyword, '%')))
             order by p.category.sortOrder asc, p.id desc
             """)
-    List<Product> search(@Param("categoryId") Long categoryId,
+    Page<Product> search(@Param("categoryId") Long categoryId,
                          @Param("activeOnly") boolean activeOnly,
                          @Param("recommended") Boolean recommended,
                          @Param("newBadge") Boolean newBadge,
                          @Param("minPrice") Long minPrice,
                          @Param("maxPrice") Long maxPrice,
-                         @Param("keyword") String keyword);
+                         @Param("keyword") String keyword,
+                         Pageable pageable);
 }

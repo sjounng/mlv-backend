@@ -145,11 +145,12 @@ class MaribelBackendFlowTest {
 
         String productsJson = mockMvc.perform(get("/api/shop/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.totalElements").value(1))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        Integer productId = JsonPath.read(productsJson, "$[0].id");
+        Integer productId = JsonPath.read(productsJson, "$.content[0].id");
 
         mockMvc.perform(post("/api/shop/purchases")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))

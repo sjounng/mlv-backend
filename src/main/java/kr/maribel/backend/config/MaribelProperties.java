@@ -34,6 +34,15 @@ public class MaribelProperties {
     private Microsoft microsoft = new Microsoft();
     private Stella stella = new Stella();
     private BootstrapAdmin bootstrapAdmin = new BootstrapAdmin();
+    private LoginRateLimit loginRateLimit = new LoginRateLimit();
+
+    public LoginRateLimit getLoginRateLimit() {
+        return loginRateLimit;
+    }
+
+    public void setLoginRateLimit(LoginRateLimit loginRateLimit) {
+        this.loginRateLimit = loginRateLimit;
+    }
 
     public Jwt getJwt() {
         return jwt;
@@ -344,6 +353,28 @@ public class MaribelProperties {
 
         public void setPaymentBaseUrl(String paymentBaseUrl) {
             this.paymentBaseUrl = paymentBaseUrl;
+        }
+    }
+
+    public static class LoginRateLimit {
+        // 관리자 로그인 실패가 window 안에서 maxFailures 를 넘으면 해당 IP 를 차단한다.
+        private int maxFailures = 10;
+        private Duration window = Duration.ofMinutes(1);
+
+        public int getMaxFailures() {
+            return maxFailures;
+        }
+
+        public void setMaxFailures(int maxFailures) {
+            this.maxFailures = maxFailures;
+        }
+
+        public Duration getWindow() {
+            return window;
+        }
+
+        public void setWindow(Duration window) {
+            this.window = window;
         }
     }
 

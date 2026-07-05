@@ -19,6 +19,9 @@ import kr.maribel.backend.domain.PurchaseOrder;
 import kr.maribel.backend.security.AuthenticatedPrincipal;
 import kr.maribel.backend.service.MemberService;
 import kr.maribel.backend.service.ShopService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,17 +51,20 @@ public class ShopController {
     }
 
     @GetMapping("/api/shop/products")
-    @Operation(summary = "상품 목록 검색")
-    List<ProductResponse> products(@RequestParam(required = false) Long categoryId,
-                                   @RequestParam(required = false) Boolean recommended,
-                                   @RequestParam(required = false) Boolean newBadge,
-                                   @RequestParam(required = false) Long minPrice,
-                                   @RequestParam(required = false) Long maxPrice,
-                                   @RequestParam(required = false) String keyword) {
-        return shopService.searchProducts(categoryId, recommended, newBadge, minPrice, maxPrice, keyword, true)
-                .stream()
-                .map(DtoMapper::product)
-                .toList();
+    @Operation(summary = "상품 목록 검색 (페이지네이션)")
+    ApiDtos.PageResponse<ProductResponse> products(@RequestParam(required = false) Long categoryId,
+                                                   @RequestParam(required = false) Boolean recommended,
+                                                   @RequestParam(required = false) Boolean newBadge,
+                                                   @RequestParam(required = false) Long minPrice,
+                                                   @RequestParam(required = false) Long maxPrice,
+                                                   @RequestParam(required = false) String keyword,
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "24") int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 100));
+        Page<ProductResponse> result = shopService
+                .searchProducts(categoryId, recommended, newBadge, minPrice, maxPrice, keyword, true, pageable)
+                .map(DtoMapper::product);
+        return ApiDtos.PageResponse.of(result, result.getContent());
     }
 
     @GetMapping("/api/shop/products/{id}")

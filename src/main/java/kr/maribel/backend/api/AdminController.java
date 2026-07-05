@@ -55,6 +55,7 @@ import kr.maribel.backend.service.LegalService;
 import kr.maribel.backend.service.PopupService;
 import kr.maribel.backend.service.ShopService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -198,7 +199,7 @@ public class AdminController {
                                    @RequestParam(required = false) Long minPrice,
                                    @RequestParam(required = false) Long maxPrice,
                                    @RequestParam(required = false) String keyword) {
-        return shopService.searchProducts(categoryId, recommended, newBadge, minPrice, maxPrice, keyword, false)
+        return shopService.searchProducts(categoryId, recommended, newBadge, minPrice, maxPrice, keyword, false, Pageable.unpaged())
                 .stream()
                 .map(DtoMapper::product)
                 .toList();

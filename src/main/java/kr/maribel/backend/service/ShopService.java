@@ -28,6 +28,10 @@ import kr.maribel.backend.repository.CategoryRepository;
 import kr.maribel.backend.repository.MailTemplateRepository;
 import kr.maribel.backend.repository.ProductRepository;
 import kr.maribel.backend.repository.PurchaseOrderRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,8 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class ShopService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShopService.class);
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
@@ -69,9 +75,9 @@ public class ShopService {
     }
 
     @Transactional(readOnly = true)
-    public List<Product> searchProducts(Long categoryId, Boolean recommended, Boolean newBadge, Long minPrice, Long maxPrice, String keyword, boolean activeOnly) {
+    public Page<Product> searchProducts(Long categoryId, Boolean recommended, Boolean newBadge, Long minPrice, Long maxPrice, String keyword, boolean activeOnly, Pageable pageable) {
         String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : "";
-        return productRepository.search(categoryId, activeOnly, recommended, newBadge, minPrice, maxPrice, normalizedKeyword);
+        return productRepository.search(categoryId, activeOnly, recommended, newBadge, minPrice, maxPrice, normalizedKeyword, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +105,7 @@ public class ShopService {
     @Transactional
     public CashCharge handleStellaWebhook(StellaWebhookRequest request, String signatureHeader) {
         if (!isValidStellaSignature(request, signatureHeader)) {
+            log.warn("stella webhook rejected: invalid signature, merchantOrderId={}", request.merchantOrderId());
             throw ApiException.unauthorized("INVALID_STELLA_SIGNATURE", "Stella IT 웹훅 서명이 올바르지 않습니다.");
         }
 
@@ -108,18 +115,24 @@ public class ShopService {
         String status = request.status().trim().toUpperCase();
         if ("PAID".equals(status) || "SUCCESS".equals(status) || "SUCCEEDED".equals(status)) {
             if (charge.getStatus() == ChargeStatus.PAID) {
+                log.info("stella webhook duplicate PAID ignored: merchantOrderId={}", charge.getMerchantOrderId());
                 return charge;
             }
             if (request.paidAmountKrw() != charge.getPaymentAmountKrw()) {
+                log.warn("stella webhook amount mismatch: merchantOrderId={}, expected={}, paid={}",
+                        charge.getMerchantOrderId(), charge.getPaymentAmountKrw(), request.paidAmountKrw());
                 throw new ApiException(HttpStatus.BAD_REQUEST, "PAYMENT_AMOUNT_MISMATCH", "결제 금액이 주문 금액과 다릅니다.");
             }
             charge.markPaid(request.stellaPaymentId(), request.receiptUrl());
             cashService.credit(charge.getMember(), charge.getCashAmount(), CashTransactionType.CHARGE, charge.getMerchantOrderId(), "Stella IT cash charge");
+            log.info("cash charge paid: merchantOrderId={}, memberId={}, cashAmount={}, paymentAmountKrw={}",
+                    charge.getMerchantOrderId(), charge.getMember().getId(), charge.getCashAmount(), charge.getPaymentAmountKrw());
             return charge;
         }
 
         if ("FAILED".equals(status) || "CANCELLED".equals(status) || "CANCELED".equals(status)) {
             charge.markFailed();
+            log.info("cash charge failed: merchantOrderId={}, status={}", charge.getMerchantOrderId(), status);
             return charge;
         }
 
@@ -148,6 +161,8 @@ public class ShopService {
         PurchaseOrder order = purchaseOrderRepository.save(new PurchaseOrder(orderNumber, member, product, quantity, totalPrice));
         OutboundMail mail = mailService.enqueue(member, product.getMailTemplate(), MailSourceType.PURCHASE, orderNumber);
         order.attachMail(mail);
+        log.info("purchase completed: orderNumber={}, memberId={}, productId={}, quantity={}, totalPrice={}",
+                orderNumber, member.getId(), product.getId(), quantity, totalPrice);
         return order;
     }
 

@@ -15,7 +15,13 @@
 
 ## Run
 
-PostgreSQL과 Redis가 필요합니다. 로컬에서는 먼저 DB와 Redis를 준비한 뒤 애플리케이션을 실행하세요.
+PostgreSQL과 Redis가 필요합니다. Docker 를 쓰면 한 번에 띄울 수 있습니다.
+
+```bash
+docker compose up -d   # postgres:17 + redis:7
+```
+
+직접 설치해서 쓰는 경우:
 
 ```bash
 psql -d postgres -c "CREATE ROLE maribel WITH LOGIN PASSWORD 'maribel_dev_password';"

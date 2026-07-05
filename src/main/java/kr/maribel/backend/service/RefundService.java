@@ -12,11 +12,15 @@ import kr.maribel.backend.domain.RefundRequest;
 import kr.maribel.backend.repository.AdminAccountRepository;
 import kr.maribel.backend.repository.CashChargeRepository;
 import kr.maribel.backend.repository.RefundRequestRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RefundService {
+
+    private static final Logger log = LoggerFactory.getLogger(RefundService.class);
 
     private final RefundRequestRepository refundRequestRepository;
     private final CashChargeRepository cashChargeRepository;
@@ -65,6 +69,8 @@ public class RefundService {
             }
             cashService.deductForRefund(charge.getMember(), charge.getCashAmount(), charge.getMerchantOrderId(), "Cash charge refund");
             charge.markRefunded();
+            log.info("refund completed: refundId={}, merchantOrderId={}, memberId={}, cashAmount={}, adminId={}",
+                    refund.getId(), charge.getMerchantOrderId(), charge.getMember().getId(), charge.getCashAmount(), adminId);
         }
 
         refund.process(status, admin, operatorMemo);
