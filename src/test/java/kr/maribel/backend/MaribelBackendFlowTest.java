@@ -143,14 +143,20 @@ class MaribelBackendFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.balance").value(1000));
 
+        // 파라미터 없으면 구버전 호환 배열 응답
         String productsJson = mockMvc.perform(get("/api/shop/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$", hasSize(1)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        Integer productId = JsonPath.read(productsJson, "$.content[0].id");
+        Integer productId = JsonPath.read(productsJson, "$[0].id");
+
+        // page/size 지정 시 페이지네이션 응답
+        mockMvc.perform(get("/api/shop/products").param("page", "0").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.totalElements").value(1));
 
         mockMvc.perform(post("/api/shop/purchases")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))

@@ -51,20 +51,24 @@ public class ShopController {
     }
 
     @GetMapping("/api/shop/products")
-    @Operation(summary = "상품 목록 검색 (페이지네이션)")
-    ApiDtos.PageResponse<ProductResponse> products(@RequestParam(required = false) Long categoryId,
-                                                   @RequestParam(required = false) Boolean recommended,
-                                                   @RequestParam(required = false) Boolean newBadge,
-                                                   @RequestParam(required = false) Long minPrice,
-                                                   @RequestParam(required = false) Long maxPrice,
-                                                   @RequestParam(required = false) String keyword,
-                                                   @RequestParam(defaultValue = "0") int page,
-                                                   @RequestParam(defaultValue = "24") int size) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 100));
+    @Operation(summary = "상품 목록 검색 (page/size 지정 시 페이지네이션 응답)")
+    Object products(@RequestParam(required = false) Long categoryId,
+                    @RequestParam(required = false) Boolean recommended,
+                    @RequestParam(required = false) Boolean newBadge,
+                    @RequestParam(required = false) Long minPrice,
+                    @RequestParam(required = false) Long maxPrice,
+                    @RequestParam(required = false) String keyword,
+                    @RequestParam(required = false) Integer page,
+                    @RequestParam(required = false) Integer size) {
+        // page/size 미지정 시 배열을 반환한다 (배포 중인 구버전 프론트 호환. 프론트 전환 후 제거 예정).
+        boolean paged = page != null || size != null;
+        Pageable pageable = paged
+                ? PageRequest.of(Math.max(page == null ? 0 : page, 0), Math.clamp(size == null ? 24 : size, 1, 100))
+                : Pageable.unpaged();
         Page<ProductResponse> result = shopService
                 .searchProducts(categoryId, recommended, newBadge, minPrice, maxPrice, keyword, true, pageable)
                 .map(DtoMapper::product);
-        return ApiDtos.PageResponse.of(result, result.getContent());
+        return paged ? ApiDtos.PageResponse.of(result, result.getContent()) : result.getContent();
     }
 
     @GetMapping("/api/shop/products/{id}")
