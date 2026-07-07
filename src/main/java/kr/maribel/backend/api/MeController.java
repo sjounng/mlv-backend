@@ -113,6 +113,13 @@ public class MeController {
         return DtoMapper.refund(refundService.create(member, request));
     }
 
+    @PostMapping("/agree-terms")
+    @Operation(summary = "가입 약관 동의 기록")
+    ProfileResponse agreeTerms(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                               @Valid @RequestBody ApiDtos.AgreeTermsRequest request) {
+        return DtoMapper.profile(memberService.agreeTerms(principal.memberId(), request.marketingAgreed()));
+    }
+
     @DeleteMapping("/withdraw")
     @Operation(summary = "회원 탈퇴")
     void withdraw(@AuthenticationPrincipal AuthenticatedPrincipal principal) {

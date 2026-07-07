@@ -78,16 +78,12 @@ public class AuthService {
         Member member = memberRepository.findByMicrosoftSub(identity.microsoftSub())
                 .map(existing -> {
                     existing.updateProfile(identity.minecraftUuid(), identity.minecraftUsername(), identity.email());
-                    if (existing.getAgreedTermsAt() == null) {
-                        existing.agreeRequiredTerms(false);
-                    }
                     return existing;
                 })
-                .orElseGet(() -> {
-                    Member created = new Member(identity.microsoftSub(), identity.minecraftUuid(), identity.minecraftUsername(), identity.email());
-                    created.agreeRequiredTerms(false);
-                    return memberRepository.save(created);
-                });
+                // 신규 가입자는 약관 동의 전 상태로 생성한다.
+                // 프론트가 agreedTermsAt == null 이면 동의 페이지로 보내고, POST /api/me/agree-terms 로 동의를 기록한다.
+                .orElseGet(() -> memberRepository.save(
+                        new Member(identity.microsoftSub(), identity.minecraftUuid(), identity.minecraftUsername(), identity.email())));
 
         cashBalanceRepository.findByMemberId(member.getId())
                 .orElseGet(() -> cashBalanceRepository.save(new CashBalance(member)));

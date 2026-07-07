@@ -368,6 +368,11 @@ public final class ApiDtos {
     ) {
     }
 
+    public record AgreeTermsRequest(
+            boolean marketingAgreed
+    ) {
+    }
+
     public record RedeemUseRequest(@NotBlank String code) {
     }
 

@@ -26,6 +26,14 @@ public class MemberService {
         return member;
     }
 
+    /** 가입 약관(이용약관·개인정보) 동의를 기록한다. 이미 동의한 경우에도 멱등하게 동작한다. */
+    @Transactional
+    public Member agreeTerms(Long memberId, boolean marketingAgreed) {
+        Member member = getActiveMember(memberId);
+        member.agreeRequiredTerms(marketingAgreed);
+        return member;
+    }
+
     @Transactional
     public void withdraw(Long memberId) {
         Member member = getActiveMember(memberId);
