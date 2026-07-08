@@ -240,6 +240,7 @@ public final class DtoMapper {
                 popup.getId(),
                 popup.getImageUrl(),
                 popup.getLinkUrl(),
+                popup.getPlacement(),
                 popup.getStartAt(),
                 popup.getEndAt(),
                 popup.isActive(),

@@ -8,10 +8,12 @@ import kr.maribel.backend.api.ApiDtos.NoticeResponse;
 import kr.maribel.backend.api.ApiDtos.PopupResponse;
 import kr.maribel.backend.api.ApiDtos.ServerStatusResponse;
 import kr.maribel.backend.config.MaribelProperties;
+import kr.maribel.backend.domain.DomainEnums.BannerPlacement;
 import kr.maribel.backend.repository.PopupRepository;
 import kr.maribel.backend.service.NoticeService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -46,8 +48,12 @@ public class PublicController {
     }
 
     @GetMapping("/popups")
-    @Operation(summary = "현재 노출 팝업 조회")
-    List<PopupResponse> popups() {
-        return popupRepository.findVisible(Instant.now()).stream().map(DtoMapper::popup).toList();
+    @Operation(summary = "현재 노출 배너 조회 (placement=HOME|EVENT 로 위치 필터)")
+    List<PopupResponse> popups(@RequestParam(name = "placement", required = false) BannerPlacement placement) {
+        Instant now = Instant.now();
+        List<kr.maribel.backend.domain.Popup> popups = placement != null
+                ? popupRepository.findVisibleByPlacement(placement, now)
+                : popupRepository.findVisible(now);
+        return popups.stream().map(DtoMapper::popup).toList();
     }
 }

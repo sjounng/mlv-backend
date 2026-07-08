@@ -10,6 +10,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import kr.maribel.backend.domain.DomainEnums.BannerPlacement;
 import kr.maribel.backend.domain.DomainEnums.CashTransactionType;
 import kr.maribel.backend.domain.DomainEnums.ChargeStatus;
 import kr.maribel.backend.domain.DomainEnums.ContactCategory;
@@ -134,6 +135,8 @@ public final class ApiDtos {
     public record PopupRequest(
             @NotBlank @Size(max = 500) String imageUrl,
             @Size(max = 500) String linkUrl,
+            // 노출 위치(HOME/EVENT). 미지정 시 서비스에서 EVENT 로 처리(구버전 호환)
+            BannerPlacement placement,
             @NotNull Instant startAt,
             @NotNull Instant endAt,
             boolean active
@@ -163,6 +166,7 @@ public final class ApiDtos {
             Long id,
             String imageUrl,
             String linkUrl,
+            BannerPlacement placement,
             Instant startAt,
             Instant endAt,
             boolean active,

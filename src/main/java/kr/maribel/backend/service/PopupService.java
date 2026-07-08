@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import kr.maribel.backend.api.ApiDtos.PopupRequest;
 import kr.maribel.backend.api.ApiException;
+import kr.maribel.backend.domain.DomainEnums.BannerPlacement;
 import kr.maribel.backend.domain.Popup;
 import kr.maribel.backend.repository.PopupRepository;
 import org.springframework.stereotype.Service;
@@ -28,19 +29,30 @@ public class PopupService {
         return popupRepository.findVisible(Instant.now());
     }
 
+    /** 특정 노출 위치(HOME/EVENT)의 현재 노출 배너만 조회 */
+    @Transactional(readOnly = true)
+    public List<Popup> visible(BannerPlacement placement) {
+        return popupRepository.findVisibleByPlacement(placement, Instant.now());
+    }
+
     @Transactional
     public Popup create(PopupRequest request) {
         validatePeriod(request);
-        Popup popup = new Popup(request.imageUrl(), request.linkUrl(), request.startAt(), request.endAt());
+        Popup popup = new Popup(request.imageUrl(), request.linkUrl(), placementOf(request), request.startAt(), request.endAt());
         popup.setActive(request.active());
         return popupRepository.save(popup);
+    }
+
+    // 미지정 시 이벤트 배너로 처리(구버전 호환)
+    private BannerPlacement placementOf(PopupRequest request) {
+        return request.placement() != null ? request.placement() : BannerPlacement.EVENT;
     }
 
     @Transactional
     public Popup update(Long id, PopupRequest request) {
         validatePeriod(request);
         Popup popup = get(id);
-        popup.update(request.imageUrl(), request.linkUrl(), request.startAt(), request.endAt(), request.active());
+        popup.update(request.imageUrl(), request.linkUrl(), placementOf(request), request.startAt(), request.endAt(), request.active());
         return popup;
     }
 

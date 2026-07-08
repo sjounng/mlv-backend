@@ -58,6 +58,12 @@ public final class DomainEnums {
         GENERAL
     }
 
+    /** 배너(팝업) 노출 위치: 홈 인트로 슬라이더 / 이벤트 페이지 상단 */
+    public enum BannerPlacement {
+        HOME,
+        EVENT
+    }
+
     public enum MailSourceType {
         EVENT,
         PURCHASE,
