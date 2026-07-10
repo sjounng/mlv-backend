@@ -37,6 +37,7 @@ import kr.maribel.backend.domain.AuditLog;
 import kr.maribel.backend.domain.CashCharge;
 import kr.maribel.backend.domain.Category;
 import kr.maribel.backend.domain.DomainEnums.ChargeStatus;
+import kr.maribel.backend.domain.DomainEnums.Role;
 import kr.maribel.backend.domain.DomainEnums.UserStatus;
 import kr.maribel.backend.domain.MailTemplate;
 import kr.maribel.backend.domain.Member;
@@ -186,6 +187,13 @@ public class AdminController {
             throw ApiException.badRequest("CANNOT_CHANGE_OWN_ROLE", "본인의 권한은 변경할 수 없습니다.");
         }
         var before = memberService.getMember(id).getRole();
+        // 슈퍼 관리자는 DB 로만 관리한다: 대상이 슈퍼 관리자이거나, 슈퍼 관리자로 승격하려는 요청은 거부.
+        if (before == Role.SUPER_ADMIN) {
+            throw ApiException.badRequest("CANNOT_MODIFY_SUPER_ADMIN", "슈퍼 관리자의 권한은 대시보드에서 변경할 수 없습니다. (DB 에서만 관리)");
+        }
+        if (request.role() == Role.SUPER_ADMIN) {
+            throw ApiException.badRequest("CANNOT_GRANT_SUPER_ADMIN", "슈퍼 관리자 권한은 대시보드에서 부여할 수 없습니다. (DB 에서만 지정)");
+        }
         Member member = memberService.changeRole(id, request.role());
         auditService.record(principal, "Member", String.valueOf(member.getId()), "ROLE_CHANGE",
                 before.name(), request.role().name());
