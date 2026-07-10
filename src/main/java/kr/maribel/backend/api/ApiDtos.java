@@ -21,6 +21,7 @@ import kr.maribel.backend.domain.DomainEnums.OutboundMailStatus;
 import kr.maribel.backend.domain.DomainEnums.PurchaseStatus;
 import kr.maribel.backend.domain.DomainEnums.RefundStatus;
 import kr.maribel.backend.domain.DomainEnums.Role;
+import kr.maribel.backend.domain.DomainEnums.WarningReason;
 import kr.maribel.backend.domain.DomainEnums.ServerOpenStatus;
 import kr.maribel.backend.domain.DomainEnums.TermsType;
 import kr.maribel.backend.domain.DomainEnums.UserStatus;
@@ -470,7 +471,61 @@ public final class ApiDtos {
             String minecraftUsername,
             String email,
             UserStatus status,
+            int warningCount,
             Instant createdAt
+    ) {
+    }
+
+    // ─── 경고 시스템 (07-09 피드백) ───
+    public record WarningResponse(
+            Long id,
+            WarningReason reason,
+            String detail,
+            String customText,
+            int countAtIssue,
+            String issuedBy,
+            boolean canceled,
+            String canceledReason,
+            Instant canceledAt,
+            Instant createdAt
+    ) {
+    }
+
+    public record WarningGrantRequest(
+            @NotNull WarningReason reason,
+            @NotBlank String detail,
+            String customText
+    ) {
+    }
+
+    public record WarningCancelRequest(
+            @Size(max = 300) String reason
+    ) {
+    }
+
+    // 관리자 회원 통합 조회 (uuid/닉/이메일/디스코드/후원금액/누적경고 + 경고 이력)
+    public record AdminMemberDetailResponse(
+            Long id,
+            String minecraftUuid,
+            String minecraftUsername,
+            String email,
+            String discordId,
+            UserStatus status,
+            int warningCount,
+            long totalPaidKrw,
+            Instant createdAt,
+            List<WarningResponse> warnings
+    ) {
+    }
+
+    // 악성 유저(경고 3회 이상) 일괄 조회
+    public record MaliciousMemberResponse(
+            Long id,
+            String minecraftUuid,
+            String minecraftUsername,
+            String email,
+            int warningCount,
+            List<WarningResponse> warnings
     ) {
     }
 

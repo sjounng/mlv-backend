@@ -42,6 +42,7 @@ import kr.maribel.backend.domain.MailTemplate;
 import kr.maribel.backend.domain.Member;
 import kr.maribel.backend.domain.OutboundMail;
 import kr.maribel.backend.domain.Product;
+import kr.maribel.backend.repository.CashChargeRepository;
 import kr.maribel.backend.security.AuthenticatedPrincipal;
 import kr.maribel.backend.service.AdminQueryService;
 import kr.maribel.backend.service.AuditService;
@@ -54,6 +55,7 @@ import kr.maribel.backend.service.RefundService;
 import kr.maribel.backend.service.LegalService;
 import kr.maribel.backend.service.PopupService;
 import kr.maribel.backend.service.ShopService;
+import kr.maribel.backend.service.WarningService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -84,6 +86,8 @@ public class AdminController {
     private final PopupService popupService;
     private final LegalService legalService;
     private final NoticeService noticeService;
+    private final WarningService warningService;
+    private final CashChargeRepository cashChargeRepository;
 
     public AdminController(AdminQueryService adminQueryService,
                            ShopService shopService,
@@ -95,7 +99,9 @@ public class AdminController {
                            MemberService memberService,
                            PopupService popupService,
                            LegalService legalService,
-                           NoticeService noticeService) {
+                           NoticeService noticeService,
+                           WarningService warningService,
+                           CashChargeRepository cashChargeRepository) {
         this.adminQueryService = adminQueryService;
         this.shopService = shopService;
         this.eventService = eventService;
@@ -107,6 +113,8 @@ public class AdminController {
         this.popupService = popupService;
         this.legalService = legalService;
         this.noticeService = noticeService;
+        this.warningService = warningService;
+        this.cashChargeRepository = cashChargeRepository;
     }
 
     @GetMapping("/dashboard")
@@ -141,6 +149,53 @@ public class AdminController {
         Member member = memberService.reactivate(id);
         auditService.record(principal, "Member", String.valueOf(member.getId()), "ACTIVATE", null, member.getStatus().name());
         return DtoMapper.adminMember(member);
+    }
+
+    // ─── 경고 시스템 (07-09 피드백) ───
+
+    @GetMapping("/members/malicious")
+    @Operation(summary = "악성 유저(경고 3회 이상) 일괄 조회")
+    List<ApiDtos.MaliciousMemberResponse> maliciousMembers() {
+        return warningService.maliciousMembers().stream()
+                .map(m -> new ApiDtos.MaliciousMemberResponse(
+                        m.getId(), m.getMinecraftUuid(), m.getMinecraftUsername(), m.getEmail(), m.getWarningCount(),
+                        warningService.listForMember(m.getId()).stream()
+                                .filter(w -> !w.isCanceled()).map(DtoMapper::warning).toList()))
+                .toList();
+    }
+
+    @GetMapping("/members/{id}")
+    @Operation(summary = "회원 통합 조회 (프로필 + 후원금액 + 경고 이력)")
+    ApiDtos.AdminMemberDetailResponse memberDetail(@PathVariable Long id) {
+        Member member = memberService.getMember(id);
+        long totalPaid = cashChargeRepository.sumPaidKrwByMemberId(member.getId());
+        List<ApiDtos.WarningResponse> warnings = warningService.listForMember(member.getId())
+                .stream().map(DtoMapper::warning).toList();
+        return new ApiDtos.AdminMemberDetailResponse(
+                member.getId(), member.getMinecraftUuid(), member.getMinecraftUsername(), member.getEmail(),
+                null, member.getStatus(), member.getWarningCount(), totalPaid, member.getCreatedAt(), warnings);
+    }
+
+    @PostMapping("/members/{id}/warnings")
+    @Operation(summary = "회원에게 경고 부여 (사유 유형 + 사건경위, 안내 메일 자동 발송)")
+    ApiDtos.WarningResponse grantWarning(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                         @PathVariable Long id,
+                                         @Valid @RequestBody ApiDtos.WarningGrantRequest request) {
+        Member member = memberService.getMember(id);
+        var warning = warningService.grant(member, request.reason(), request.detail(), request.customText(), principal.displayName());
+        auditService.record(principal, "Warning", String.valueOf(warning.getId()), "GRANT", null,
+                request.reason().name() + " / " + member.getMinecraftUsername());
+        return DtoMapper.warning(warning);
+    }
+
+    @PostMapping("/warnings/{warningId}/cancel")
+    @Operation(summary = "경고 취소 (취소 시 누적 경고 수 재계산)")
+    ApiDtos.WarningResponse cancelWarning(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                          @PathVariable Long warningId,
+                                          @Valid @RequestBody ApiDtos.WarningCancelRequest request) {
+        var warning = warningService.cancel(warningId, request.reason());
+        auditService.record(principal, "Warning", String.valueOf(warning.getId()), "CANCEL", null, request.reason());
+        return DtoMapper.warning(warning);
     }
 
     @GetMapping("/audit-logs")

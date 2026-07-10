@@ -20,6 +20,7 @@ import kr.maribel.backend.api.ApiDtos.PurchaseResponse;
 import kr.maribel.backend.api.ApiDtos.RedeemCodeResponse;
 import kr.maribel.backend.api.ApiDtos.RefundResponse;
 import kr.maribel.backend.api.ApiDtos.TermsResponse;
+import kr.maribel.backend.api.ApiDtos.WarningResponse;
 import kr.maribel.backend.domain.AdminAccount;
 import kr.maribel.backend.domain.AuditLog;
 import kr.maribel.backend.domain.CashCharge;
@@ -30,6 +31,7 @@ import kr.maribel.backend.domain.MailTemplate;
 import kr.maribel.backend.domain.MaribelEvent;
 import kr.maribel.backend.domain.Member;
 import kr.maribel.backend.domain.Notice;
+import kr.maribel.backend.domain.Warning;
 import kr.maribel.backend.domain.OutboundMail;
 import kr.maribel.backend.domain.Popup;
 import kr.maribel.backend.domain.Product;
@@ -249,6 +251,21 @@ public final class DtoMapper {
         );
     }
 
+    public static WarningResponse warning(Warning w) {
+        return new WarningResponse(
+                w.getId(),
+                w.getReason(),
+                w.getDetail(),
+                w.getCustomText(),
+                w.getCountAtIssue(),
+                w.getIssuedBy(),
+                w.isCanceled(),
+                w.getCanceledReason(),
+                w.getCanceledAt(),
+                w.getCreatedAt()
+        );
+    }
+
     public static AdminMemberResponse adminMember(Member member) {
         return new AdminMemberResponse(
                 member.getId(),
@@ -257,6 +274,7 @@ public final class DtoMapper {
                 member.getMinecraftUsername(),
                 member.getEmail(),
                 member.getStatus(),
+                member.getWarningCount(),
                 member.getCreatedAt()
         );
     }

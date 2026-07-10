@@ -64,6 +64,13 @@ public final class DomainEnums {
         EVENT
     }
 
+    /** 경고 사유 유형: 비매너 / 버그악용 / 직접작성 */
+    public enum WarningReason {
+        MISCONDUCT,
+        BUG_ABUSE,
+        CUSTOM
+    }
+
     public enum MailSourceType {
         EVENT,
         PURCHASE,

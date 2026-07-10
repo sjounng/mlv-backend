@@ -163,4 +163,9 @@ public class Member extends TimestampedEntity {
     public int getWarningCount() {
         return warningCount;
     }
+
+    /** 유효 경고 수와 동기화 (경고 부여/취소 시 호출) */
+    public void setWarningCount(int warningCount) {
+        this.warningCount = Math.max(0, warningCount);
+    }
 }
