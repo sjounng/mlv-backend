@@ -95,6 +95,7 @@ public final class ApiDtos {
             String email,
             UserStatus status,
             Instant agreedTermsAt,
+            int warningCount,
             Instant createdAt
     ) {
     }

@@ -66,6 +66,10 @@ public class Member extends TimestampedEntity {
     @Column(name = "withdrawn_at")
     private Instant withdrawnAt;
 
+    // 누적 경고 횟수 (관리자 경고 부여 시스템은 추후 구현, 표시용 필드 선반영)
+    @Column(name = "warning_count", nullable = false)
+    private int warningCount = 0;
+
     protected Member() {
     }
 
@@ -154,5 +158,9 @@ public class Member extends TimestampedEntity {
 
     public Instant getWithdrawnAt() {
         return withdrawnAt;
+    }
+
+    public int getWarningCount() {
+        return warningCount;
     }
 }

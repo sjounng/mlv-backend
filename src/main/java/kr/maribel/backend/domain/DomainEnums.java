@@ -89,6 +89,8 @@ public final class DomainEnums {
         PAYMENT,
         ACCOUNT,
         EVENT,
+        PLAYER_REPORT,
+        BUG_REPORT,
         OTHER
     }
 

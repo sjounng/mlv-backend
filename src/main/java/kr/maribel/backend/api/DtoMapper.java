@@ -51,6 +51,7 @@ public final class DtoMapper {
                 member.getEmail(),
                 member.getStatus(),
                 member.getAgreedTermsAt(),
+                member.getWarningCount(),
                 member.getCreatedAt()
         );
     }
