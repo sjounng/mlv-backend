@@ -173,7 +173,23 @@ public class AdminController {
                 .stream().map(DtoMapper::warning).toList();
         return new ApiDtos.AdminMemberDetailResponse(
                 member.getId(), member.getMinecraftUuid(), member.getMinecraftUsername(), member.getEmail(),
-                null, member.getStatus(), member.getWarningCount(), totalPaid, member.getCreatedAt(), warnings);
+                null, member.getStatus(), member.getRole(), member.getWarningCount(), totalPaid, member.getCreatedAt(), warnings);
+    }
+
+    @PatchMapping("/members/{id}/role")
+    @Operation(summary = "회원 권한(역할) 변경 — 최고 관리자 전용")
+    AdminMemberResponse changeRole(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                   @PathVariable Long id,
+                                   @Valid @RequestBody ApiDtos.RoleChangeRequest request) {
+        // 자기 자신의 권한은 변경 불가 (실수로 인한 셀프 잠금 방지)
+        if (principal.memberId() != null && principal.memberId().equals(id)) {
+            throw ApiException.badRequest("CANNOT_CHANGE_OWN_ROLE", "본인의 권한은 변경할 수 없습니다.");
+        }
+        var before = memberService.getMember(id).getRole();
+        Member member = memberService.changeRole(id, request.role());
+        auditService.record(principal, "Member", String.valueOf(member.getId()), "ROLE_CHANGE",
+                before.name(), request.role().name());
+        return DtoMapper.adminMember(member);
     }
 
     @PostMapping("/members/{id}/warnings")

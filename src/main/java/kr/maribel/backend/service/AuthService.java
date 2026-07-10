@@ -3,6 +3,7 @@ package kr.maribel.backend.service;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import kr.maribel.backend.api.ApiDtos.AdminLoginRequest;
 import kr.maribel.backend.api.ApiDtos.DevLoginRequest;
 import kr.maribel.backend.api.ApiDtos.MicrosoftAuthorizeUrlResponse;
@@ -13,6 +14,7 @@ import kr.maribel.backend.domain.AdminAccount;
 // MicrosoftIdentity 는 동일 패키지(kr.maribel.backend.service)라 별도 import 불필요
 import kr.maribel.backend.domain.CashBalance;
 import kr.maribel.backend.domain.DomainEnums.RefreshTokenOwnerType;
+import kr.maribel.backend.domain.DomainEnums.Role;
 import kr.maribel.backend.domain.DomainEnums.UserStatus;
 import kr.maribel.backend.domain.Member;
 import kr.maribel.backend.repository.AdminAccountRepository;
@@ -158,7 +160,29 @@ public class AuthService {
         return issueForMember(member, null);
     }
 
+    // 어드민 허용목록(닉네임/UUID)에 있는 멤버는 로그인 시 SUPER_ADMIN 으로 승격한다.
+    // 이미 권한이 있으면 유지(강등 안 함).
+    private void applyAdminAllowlist(Member member) {
+        if (member.getRole() != Role.USER) {
+            return;
+        }
+        List<String> allow = properties.getAdminMinecraft();
+        if (allow == null || allow.isEmpty()) {
+            return;
+        }
+        String username = member.getMinecraftUsername();
+        String uuidPlain = member.getMinecraftUuid() == null ? "" : member.getMinecraftUuid().replace("-", "");
+        boolean isAdmin = allow.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .anyMatch(s -> s.equalsIgnoreCase(username) || s.replace("-", "").equalsIgnoreCase(uuidPlain));
+        if (isAdmin) {
+            member.assignRole(Role.SUPER_ADMIN);
+        }
+    }
+
     private TokenResponse issueForMember(Member member, String sessionId) {
+        applyAdminAllowlist(member);
         RefreshTokenSubject subject = new RefreshTokenSubject(
                 RefreshTokenOwnerType.MEMBER,
                 member.getId(),

@@ -13,6 +13,16 @@ public class MaribelProperties {
     private Upload upload = new Upload();
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
+    /** 어드민으로 자동 승격할 마인크래프트 닉네임/UUID 목록 (로그인 시 SUPER_ADMIN 부여) */
+    private List<String> adminMinecraft = new java.util.ArrayList<>();
+
+    public List<String> getAdminMinecraft() {
+        return adminMinecraft;
+    }
+
+    public void setAdminMinecraft(List<String> adminMinecraft) {
+        this.adminMinecraft = adminMinecraft;
+    }
 
     public Upload getUpload() {
         return upload;

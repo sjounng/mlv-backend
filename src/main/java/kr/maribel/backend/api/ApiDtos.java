@@ -95,6 +95,7 @@ public final class ApiDtos {
             String minecraftUsername,
             String email,
             UserStatus status,
+            Role role,
             Instant agreedTermsAt,
             int warningCount,
             Instant createdAt
@@ -503,7 +504,7 @@ public final class ApiDtos {
     ) {
     }
 
-    // 관리자 회원 통합 조회 (uuid/닉/이메일/디스코드/후원금액/누적경고 + 경고 이력)
+    // 관리자 회원 통합 조회 (uuid/닉/이메일/디스코드/권한/후원금액/누적경고 + 경고 이력)
     public record AdminMemberDetailResponse(
             Long id,
             String minecraftUuid,
@@ -511,10 +512,16 @@ public final class ApiDtos {
             String email,
             String discordId,
             UserStatus status,
+            Role role,
             int warningCount,
             long totalPaidKrw,
             Instant createdAt,
             List<WarningResponse> warnings
+    ) {
+    }
+
+    public record RoleChangeRequest(
+            @NotNull Role role
     ) {
     }
 

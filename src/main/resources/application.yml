@@ -113,3 +113,5 @@ maribel:
   bootstrap-admin:
     username: ${MARIBEL_BOOTSTRAP_ADMIN_USERNAME:admin}
     password: ${MARIBEL_BOOTSTRAP_ADMIN_PASSWORD:change-me-now}
+  # 어드민으로 자동 승격할 마인크래프트 닉네임/UUID (콤마 구분). 로그인 시 SUPER_ADMIN 부여.
+  admin-minecraft: ${MARIBEL_ADMIN_MINECRAFT:}

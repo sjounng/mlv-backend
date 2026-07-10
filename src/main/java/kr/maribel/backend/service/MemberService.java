@@ -48,6 +48,13 @@ public class MemberService {
     }
 
     @Transactional
+    public Member changeRole(Long memberId, kr.maribel.backend.domain.DomainEnums.Role role) {
+        Member member = getMember(memberId);
+        member.assignRole(role);
+        return member;
+    }
+
+    @Transactional
     public Member suspend(Long memberId) {
         Member member = getMember(memberId);
         try {

@@ -52,6 +52,7 @@ public final class DtoMapper {
                 member.getMinecraftUsername(),
                 member.getEmail(),
                 member.getStatus(),
+                member.getRole(),
                 member.getAgreedTermsAt(),
                 member.getWarningCount(),
                 member.getCreatedAt()

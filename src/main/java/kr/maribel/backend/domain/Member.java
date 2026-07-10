@@ -156,6 +156,11 @@ public class Member extends TimestampedEntity {
         return role;
     }
 
+    /** 역할 지정 (어드민 허용목록 승격 등) */
+    public void assignRole(Role role) {
+        this.role = role;
+    }
+
     public Instant getWithdrawnAt() {
         return withdrawnAt;
     }

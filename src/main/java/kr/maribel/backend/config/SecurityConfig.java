@@ -40,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/legal/**", "/api/shop/categories", "/api/shop/products", "/api/shop/products/**", "/api/events").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/stella/webhook").permitAll()
                         .requestMatchers("/api/webpanel/**").hasRole("WEBPANEL")
+                        // 권한(역할) 변경은 최고 관리자만 (일반 /api/admin/** 규칙보다 먼저 매칭)
+                        .requestMatchers(HttpMethod.PATCH, "/api/admin/members/*/role").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyRole("OPERATOR", "SUPER_ADMIN")
                         .anyRequest().authenticated()
                 )
