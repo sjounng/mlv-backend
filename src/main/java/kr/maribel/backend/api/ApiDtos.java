@@ -525,6 +525,14 @@ public final class ApiDtos {
     ) {
     }
 
+    // 현재 로그인한 관리자 식별 (권한 관리 UI 노출 판단용). 부트스트랩 관리자면 memberId 는 null.
+    public record AdminMeResponse(
+            Long memberId,
+            String displayName,
+            Role role
+    ) {
+    }
+
     // 악성 유저(경고 3회 이상) 일괄 조회
     public record MaliciousMemberResponse(
             Long id,

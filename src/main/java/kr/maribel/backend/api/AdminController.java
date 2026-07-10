@@ -124,6 +124,12 @@ public class AdminController {
         return adminQueryService.dashboard();
     }
 
+    @GetMapping("/me")
+    @Operation(summary = "현재 로그인한 관리자 정보 (권한 관리 UI 노출 판단)")
+    ApiDtos.AdminMeResponse me(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
+        return new ApiDtos.AdminMeResponse(principal.memberId(), principal.displayName(), principal.role());
+    }
+
     @GetMapping("/members")
     @Operation(summary = "회원 목록 검색 (상태/키워드 필터 + 페이지네이션)")
     PageResponse<AdminMemberResponse> members(@RequestParam(required = false) UserStatus status,
