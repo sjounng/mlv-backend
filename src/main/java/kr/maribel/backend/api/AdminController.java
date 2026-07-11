@@ -56,6 +56,7 @@ import kr.maribel.backend.service.RefundService;
 import kr.maribel.backend.service.LegalService;
 import kr.maribel.backend.service.PopupService;
 import kr.maribel.backend.service.ShopService;
+import kr.maribel.backend.service.SiteSettingService;
 import kr.maribel.backend.service.WarningService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -89,6 +90,7 @@ public class AdminController {
     private final NoticeService noticeService;
     private final WarningService warningService;
     private final CashChargeRepository cashChargeRepository;
+    private final SiteSettingService siteSettingService;
 
     public AdminController(AdminQueryService adminQueryService,
                            ShopService shopService,
@@ -102,7 +104,8 @@ public class AdminController {
                            LegalService legalService,
                            NoticeService noticeService,
                            WarningService warningService,
-                           CashChargeRepository cashChargeRepository) {
+                           CashChargeRepository cashChargeRepository,
+                           SiteSettingService siteSettingService) {
         this.adminQueryService = adminQueryService;
         this.shopService = shopService;
         this.eventService = eventService;
@@ -116,6 +119,22 @@ public class AdminController {
         this.noticeService = noticeService;
         this.warningService = warningService;
         this.cashChargeRepository = cashChargeRepository;
+        this.siteSettingService = siteSettingService;
+    }
+
+    @GetMapping("/shop-status")
+    @Operation(summary = "웹상점 활성화 상태 조회 (관리자)")
+    ApiDtos.ShopStatusResponse shopStatus() {
+        return new ApiDtos.ShopStatusResponse(siteSettingService.isShopEnabled());
+    }
+
+    @PatchMapping("/shop-status")
+    @Operation(summary = "웹상점 활성화/비활성화 (07-10 피드백)")
+    ApiDtos.ShopStatusResponse updateShopStatus(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                                @RequestBody ApiDtos.ShopStatusUpdateRequest request) {
+        boolean enabled = siteSettingService.setShopEnabled(request.enabled());
+        auditService.record(principal, "SiteSetting", "shop.enabled", "UPDATE", null, String.valueOf(enabled));
+        return new ApiDtos.ShopStatusResponse(enabled);
     }
 
     @GetMapping("/dashboard")

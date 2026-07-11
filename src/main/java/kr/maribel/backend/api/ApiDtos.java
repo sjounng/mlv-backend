@@ -533,6 +533,13 @@ public final class ApiDtos {
     ) {
     }
 
+    // 상점 활성화 상태 (07-10 피드백)
+    public record ShopStatusResponse(boolean enabled) {
+    }
+
+    public record ShopStatusUpdateRequest(boolean enabled) {
+    }
+
     // 악성 유저(경고 3회 이상) 일괄 조회
     public record MaliciousMemberResponse(
             Long id,

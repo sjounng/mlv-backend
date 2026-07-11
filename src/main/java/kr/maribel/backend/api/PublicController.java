@@ -11,6 +11,7 @@ import kr.maribel.backend.config.MaribelProperties;
 import kr.maribel.backend.domain.DomainEnums.BannerPlacement;
 import kr.maribel.backend.repository.PopupRepository;
 import kr.maribel.backend.service.NoticeService;
+import kr.maribel.backend.service.SiteSettingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,11 +25,20 @@ public class PublicController {
     private final MaribelProperties properties;
     private final PopupRepository popupRepository;
     private final NoticeService noticeService;
+    private final SiteSettingService siteSettingService;
 
-    public PublicController(MaribelProperties properties, PopupRepository popupRepository, NoticeService noticeService) {
+    public PublicController(MaribelProperties properties, PopupRepository popupRepository,
+                           NoticeService noticeService, SiteSettingService siteSettingService) {
         this.properties = properties;
         this.popupRepository = popupRepository;
         this.noticeService = noticeService;
+        this.siteSettingService = siteSettingService;
+    }
+
+    @GetMapping("/shop-status")
+    @Operation(summary = "웹상점 활성화 상태 조회")
+    ApiDtos.ShopStatusResponse shopStatus() {
+        return new ApiDtos.ShopStatusResponse(siteSettingService.isShopEnabled());
     }
 
     @GetMapping("/notices")
