@@ -18,6 +18,7 @@ import kr.maribel.backend.domain.DomainEnums.ContactStatus;
 import kr.maribel.backend.domain.DomainEnums.EventType;
 import kr.maribel.backend.domain.DomainEnums.MailSourceType;
 import kr.maribel.backend.domain.DomainEnums.OutboundMailStatus;
+import kr.maribel.backend.domain.DomainEnums.PurchaseLimitType;
 import kr.maribel.backend.domain.DomainEnums.PurchaseStatus;
 import kr.maribel.backend.domain.DomainEnums.RefundStatus;
 import kr.maribel.backend.domain.DomainEnums.Role;
@@ -220,7 +221,10 @@ public final class ApiDtos {
             boolean active,
             @PositiveOrZero Integer stockQuantity,
             boolean recommended,
-            boolean newBadge
+            boolean newBadge,
+            // 구매 제한 (07-12): 미지정 시 NONE / 1
+            PurchaseLimitType purchaseLimitType,
+            @Positive Integer purchaseLimitCount
     ) {
     }
 
@@ -235,7 +239,9 @@ public final class ApiDtos {
             boolean active,
             Integer stockQuantity,
             boolean recommended,
-            boolean newBadge
+            boolean newBadge,
+            PurchaseLimitType purchaseLimitType,
+            int purchaseLimitCount
     ) {
     }
 

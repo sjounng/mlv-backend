@@ -86,7 +86,9 @@ public final class DtoMapper {
                 product.isActive(),
                 product.getStockQuantity(),
                 product.isRecommended(),
-                product.isNewBadge()
+                product.isNewBadge(),
+                product.getPurchaseLimitType(),
+                product.getPurchaseLimitCount()
         );
     }
 

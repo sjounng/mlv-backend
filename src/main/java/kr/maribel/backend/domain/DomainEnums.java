@@ -64,6 +64,14 @@ public final class DomainEnums {
         EVENT
     }
 
+    /** 상품 구매 제한 유형: 없음 / 매주 월요일 06:00 초기화 / 매월 1일 06:00 초기화 / 계정당 1회 */
+    public enum PurchaseLimitType {
+        NONE,
+        WEEKLY,
+        MONTHLY,
+        ONCE
+    }
+
     /** 경고 사유 유형: 비매너 / 버그악용 / 직접작성 */
     public enum WarningReason {
         MISCONDUCT,

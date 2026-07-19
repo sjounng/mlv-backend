@@ -121,7 +121,8 @@ public class DataInitializer implements ApplicationRunner {
                     starterKit
             );
             product.update(product.getName(), product.getDescription(), product.getPrice(), product.getImageUrl(),
-                    starter, starterKit, true, null, true, true);
+                    starter, starterKit, true, null, true, true,
+                    kr.maribel.backend.domain.DomainEnums.PurchaseLimitType.NONE, 1);
             productRepository.save(product);
         }
 

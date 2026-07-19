@@ -2,6 +2,9 @@ package kr.maribel.backend.service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +18,7 @@ import kr.maribel.backend.api.ApiException;
 import kr.maribel.backend.config.MaribelProperties;
 import kr.maribel.backend.domain.CashCharge;
 import kr.maribel.backend.domain.Category;
+import kr.maribel.backend.domain.DomainEnums;
 import kr.maribel.backend.domain.DomainEnums.CashTransactionType;
 import kr.maribel.backend.domain.DomainEnums.ChargeStatus;
 import kr.maribel.backend.domain.DomainEnums.MailSourceType;
@@ -148,6 +152,7 @@ public class ShopService {
             throw ApiException.notFound("PRODUCT_NOT_FOUND", "상품을 찾을 수 없습니다.");
         }
         int quantity = request.quantity();
+        assertPurchaseLimit(member, product, quantity);
         long totalPrice = product.getPrice() * quantity;
         String orderNumber = "po_" + UUID.randomUUID().toString().replace("-", "");
 
@@ -164,6 +169,51 @@ public class ShopService {
         log.info("purchase completed: orderNumber={}, memberId={}, productId={}, quantity={}, totalPrice={}",
                 orderNumber, member.getId(), product.getId(), quantity, totalPrice);
         return order;
+    }
+
+    // 구매 제한 검증 (07-12 피드백): 리셋 경계는 KST 오전 6시 기준.
+    //  WEEKLY = 직전 월요일 06:00, MONTHLY = 이번 달 1일 06:00, ONCE = 전체 기간.
+    private void assertPurchaseLimit(Member member, Product product, int quantity) {
+        DomainEnums.PurchaseLimitType type = product.getPurchaseLimitType();
+        if (type == null || type == DomainEnums.PurchaseLimitType.NONE) {
+            return;
+        }
+        Instant since = switch (type) {
+            case WEEKLY -> lastResetWeekly();
+            case MONTHLY -> lastResetMonthly();
+            default -> Instant.EPOCH; // ONCE
+        };
+        int limit = type == DomainEnums.PurchaseLimitType.ONCE ? 1 : Math.max(1, product.getPurchaseLimitCount());
+        long already = purchaseOrderRepository.sumQuantitySince(member.getId(), product.getId(), since);
+        if (already + quantity > limit) {
+            String label = switch (type) {
+                case WEEKLY -> "매주 월요일 오전 6시에 초기화되는 상품입니다.";
+                case MONTHLY -> "매월 1일 오전 6시에 초기화되는 상품입니다.";
+                default -> "계정 당 " + limit + "회만 구매할 수 있는 상품입니다.";
+            };
+            throw ApiException.badRequest("PURCHASE_LIMIT_EXCEEDED",
+                    "구매 가능 횟수를 초과했습니다. (" + already + "/" + limit + ") " + label);
+        }
+    }
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
+    private Instant lastResetWeekly() {
+        ZonedDateTime now = ZonedDateTime.now(KST);
+        ZonedDateTime candidate = now.with(java.time.DayOfWeek.MONDAY).withHour(6).withMinute(0).withSecond(0).withNano(0);
+        if (candidate.isAfter(now)) {
+            candidate = candidate.minusWeeks(1);
+        }
+        return candidate.toInstant();
+    }
+
+    private Instant lastResetMonthly() {
+        ZonedDateTime now = ZonedDateTime.now(KST);
+        ZonedDateTime candidate = now.withDayOfMonth(1).withHour(6).withMinute(0).withSecond(0).withNano(0);
+        if (candidate.isAfter(now)) {
+            candidate = candidate.minusMonths(1);
+        }
+        return candidate.toInstant();
     }
 
     @Transactional
@@ -195,14 +245,16 @@ public class ShopService {
         if (id == null) {
             Product product = new Product(request.name(), request.description(), request.price(), request.imageUrl(), category, template);
             product.update(request.name(), request.description(), request.price(), request.imageUrl(), category, template,
-                    request.active(), request.stockQuantity(), request.recommended(), request.newBadge());
+                    request.active(), request.stockQuantity(), request.recommended(), request.newBadge(),
+                    request.purchaseLimitType(), request.purchaseLimitCount() == null ? 1 : request.purchaseLimitCount());
             return productRepository.save(product);
         }
 
         Product product = productRepository.findWithCategoryAndMailTemplateById(id)
                 .orElseThrow(() -> ApiException.notFound("PRODUCT_NOT_FOUND", "상품을 찾을 수 없습니다."));
         product.update(request.name(), request.description(), request.price(), request.imageUrl(), category, template,
-                request.active(), request.stockQuantity(), request.recommended(), request.newBadge());
+                request.active(), request.stockQuantity(), request.recommended(), request.newBadge(),
+                request.purchaseLimitType(), request.purchaseLimitCount() == null ? 1 : request.purchaseLimitCount());
         return product;
     }
 

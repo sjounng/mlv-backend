@@ -2,6 +2,8 @@ package kr.maribel.backend.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -60,6 +62,14 @@ public class Product extends TimestampedEntity {
     @Column(name = "price_updated_at")
     private Instant priceUpdatedAt;
 
+    // 구매 제한 (07-12 피드백): 유형 + 기간 내 구매 가능 횟수
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purchase_limit_type", nullable = false, length = 30)
+    private DomainEnums.PurchaseLimitType purchaseLimitType = DomainEnums.PurchaseLimitType.NONE;
+
+    @Column(name = "purchase_limit_count", nullable = false)
+    private int purchaseLimitCount = 1;
+
     protected Product() {
     }
 
@@ -75,7 +85,8 @@ public class Product extends TimestampedEntity {
 
     public void update(String name, String description, long price, String imageUrl, Category category,
                        MailTemplate mailTemplate, boolean active, Integer stockQuantity,
-                       boolean recommended, boolean newBadge) {
+                       boolean recommended, boolean newBadge,
+                       DomainEnums.PurchaseLimitType purchaseLimitType, int purchaseLimitCount) {
         this.name = name;
         this.description = description;
         if (this.price != price) {
@@ -89,6 +100,8 @@ public class Product extends TimestampedEntity {
         this.stockQuantity = stockQuantity;
         this.recommended = recommended;
         this.newBadge = newBadge;
+        this.purchaseLimitType = purchaseLimitType == null ? DomainEnums.PurchaseLimitType.NONE : purchaseLimitType;
+        this.purchaseLimitCount = Math.max(1, purchaseLimitCount);
     }
 
     public void decreaseStock(int quantity) {
@@ -143,5 +156,13 @@ public class Product extends TimestampedEntity {
 
     public boolean isNewBadge() {
         return newBadge;
+    }
+
+    public DomainEnums.PurchaseLimitType getPurchaseLimitType() {
+        return purchaseLimitType;
+    }
+
+    public int getPurchaseLimitCount() {
+        return purchaseLimitCount;
     }
 }
