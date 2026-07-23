@@ -266,6 +266,7 @@ public final class DtoMapper {
                 popup.getPlacement(),
                 popup.getStartAt(),
                 popup.getEndAt(),
+                popup.getSortOrder(),
                 popup.isActive(),
                 popup.getCreatedAt()
         );

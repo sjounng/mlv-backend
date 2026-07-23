@@ -37,6 +37,10 @@ public class Popup extends TimestampedEntity {
     @Column(name = "end_at", nullable = false)
     private Instant endAt;
 
+    // 슬라이더 내 노출 순서 (작을수록 먼저). 07-24 배너 순서 지정
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder = 0;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -51,17 +55,26 @@ public class Popup extends TimestampedEntity {
         this.endAt = endAt;
     }
 
-    public void update(String imageUrl, String linkUrl, BannerPlacement placement, Instant startAt, Instant endAt, boolean active) {
+    public void update(String imageUrl, String linkUrl, BannerPlacement placement, Instant startAt, Instant endAt, int sortOrder, boolean active) {
         this.imageUrl = imageUrl;
         this.linkUrl = linkUrl;
         this.placement = placement;
         this.startAt = startAt;
         this.endAt = endAt;
+        this.sortOrder = sortOrder;
         this.active = active;
     }
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+
+    public int getSortOrder() {
+        return sortOrder;
     }
 
     public Long getId() {
