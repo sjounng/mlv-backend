@@ -8,6 +8,8 @@ import java.util.List;
 import kr.maribel.backend.config.OpenApiConfig;
 import kr.maribel.backend.api.ApiDtos.CashChargeRequest;
 import kr.maribel.backend.api.ApiDtos.CashChargeResponse;
+import kr.maribel.backend.api.ApiDtos.CashProductDescriptionResponse;
+import kr.maribel.backend.api.ApiDtos.CashProductResponse;
 import kr.maribel.backend.api.ApiDtos.CategoryResponse;
 import kr.maribel.backend.api.ApiDtos.ProductResponse;
 import kr.maribel.backend.api.ApiDtos.PurchaseRequest;
@@ -17,8 +19,10 @@ import kr.maribel.backend.domain.CashCharge;
 import kr.maribel.backend.domain.Member;
 import kr.maribel.backend.domain.PurchaseOrder;
 import kr.maribel.backend.security.AuthenticatedPrincipal;
+import kr.maribel.backend.service.CashProductService;
 import kr.maribel.backend.service.MemberService;
 import kr.maribel.backend.service.ShopService;
+import kr.maribel.backend.service.SiteSettingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,10 +42,33 @@ public class ShopController {
 
     private final ShopService shopService;
     private final MemberService memberService;
+    private final CashProductService cashProductService;
+    private final SiteSettingService siteSettingService;
 
-    public ShopController(ShopService shopService, MemberService memberService) {
+    public ShopController(ShopService shopService, MemberService memberService,
+                          CashProductService cashProductService, SiteSettingService siteSettingService) {
         this.shopService = shopService;
         this.memberService = memberService;
+        this.cashProductService = cashProductService;
+        this.siteSettingService = siteSettingService;
+    }
+
+    @GetMapping("/api/shop/cash-products")
+    @Operation(summary = "캐시 충전 상품 목록 조회")
+    List<CashProductResponse> cashProducts() {
+        return cashProductService.activeProducts().stream().map(DtoMapper::cashProduct).toList();
+    }
+
+    @GetMapping("/api/shop/cash-products/{id}")
+    @Operation(summary = "캐시 충전 상품 상세 조회")
+    CashProductResponse cashProduct(@PathVariable Long id) {
+        return DtoMapper.cashProduct(cashProductService.activeProduct(id));
+    }
+
+    @GetMapping("/api/shop/cash-product-description")
+    @Operation(summary = "캐시 충전 상품 공통 상세 소개")
+    CashProductDescriptionResponse cashProductDescription() {
+        return new CashProductDescriptionResponse(siteSettingService.getCashProductDescription());
     }
 
     @GetMapping("/api/shop/categories")

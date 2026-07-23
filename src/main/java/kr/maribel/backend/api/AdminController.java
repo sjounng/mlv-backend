@@ -55,6 +55,7 @@ import kr.maribel.backend.service.NoticeService;
 import kr.maribel.backend.service.RefundService;
 import kr.maribel.backend.service.LegalService;
 import kr.maribel.backend.service.PopupService;
+import kr.maribel.backend.service.CashProductService;
 import kr.maribel.backend.service.ShopService;
 import kr.maribel.backend.service.SiteSettingService;
 import kr.maribel.backend.service.WarningService;
@@ -66,6 +67,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -91,6 +93,7 @@ public class AdminController {
     private final WarningService warningService;
     private final CashChargeRepository cashChargeRepository;
     private final SiteSettingService siteSettingService;
+    private final CashProductService cashProductService;
 
     public AdminController(AdminQueryService adminQueryService,
                            ShopService shopService,
@@ -105,7 +108,8 @@ public class AdminController {
                            NoticeService noticeService,
                            WarningService warningService,
                            CashChargeRepository cashChargeRepository,
-                           SiteSettingService siteSettingService) {
+                           SiteSettingService siteSettingService,
+                           CashProductService cashProductService) {
         this.adminQueryService = adminQueryService;
         this.shopService = shopService;
         this.eventService = eventService;
@@ -120,6 +124,7 @@ public class AdminController {
         this.warningService = warningService;
         this.cashChargeRepository = cashChargeRepository;
         this.siteSettingService = siteSettingService;
+        this.cashProductService = cashProductService;
     }
 
     @GetMapping("/shop-status")
@@ -135,6 +140,54 @@ public class AdminController {
         boolean enabled = siteSettingService.setShopEnabled(request.enabled());
         auditService.record(principal, "SiteSetting", "shop.enabled", "UPDATE", null, String.valueOf(enabled));
         return new ApiDtos.ShopStatusResponse(enabled);
+    }
+
+    // ── 캐시 충전 상품 (07-22 웹상점 개편) ──
+    @GetMapping("/cash-products")
+    @Operation(summary = "캐시 충전 상품 목록 (관리자)")
+    List<ApiDtos.CashProductResponse> cashProducts() {
+        return cashProductService.allProducts().stream().map(DtoMapper::cashProduct).toList();
+    }
+
+    @PostMapping("/cash-products")
+    @Operation(summary = "캐시 충전 상품 생성")
+    ApiDtos.CashProductResponse createCashProduct(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                                  @Valid @RequestBody ApiDtos.CashProductUpsertRequest request) {
+        var product = cashProductService.upsert(null, request);
+        auditService.record(principal, "CashProduct", String.valueOf(product.getId()), "CREATE", null, product.getName());
+        return DtoMapper.cashProduct(product);
+    }
+
+    @PatchMapping("/cash-products/{id}")
+    @Operation(summary = "캐시 충전 상품 수정")
+    ApiDtos.CashProductResponse updateCashProduct(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                                  @PathVariable Long id,
+                                                  @Valid @RequestBody ApiDtos.CashProductUpsertRequest request) {
+        var product = cashProductService.upsert(id, request);
+        auditService.record(principal, "CashProduct", String.valueOf(product.getId()), "UPDATE", null, product.getName());
+        return DtoMapper.cashProduct(product);
+    }
+
+    @DeleteMapping("/cash-products/{id}")
+    @Operation(summary = "캐시 충전 상품 삭제")
+    void deleteCashProduct(@AuthenticationPrincipal AuthenticatedPrincipal principal, @PathVariable Long id) {
+        cashProductService.delete(id);
+        auditService.record(principal, "CashProduct", String.valueOf(id), "DELETE", null, null);
+    }
+
+    @GetMapping("/cash-product-description")
+    @Operation(summary = "캐시 충전 상품 공통 상세 소개 조회")
+    ApiDtos.CashProductDescriptionResponse cashProductDescription() {
+        return new ApiDtos.CashProductDescriptionResponse(siteSettingService.getCashProductDescription());
+    }
+
+    @PutMapping("/cash-product-description")
+    @Operation(summary = "캐시 충전 상품 공통 상세 소개 설정")
+    ApiDtos.CashProductDescriptionResponse updateCashProductDescription(@AuthenticationPrincipal AuthenticatedPrincipal principal,
+                                                                        @RequestBody ApiDtos.CashProductDescriptionRequest request) {
+        String value = siteSettingService.setCashProductDescription(request.description());
+        auditService.record(principal, "SiteSetting", "cash.product.description", "UPDATE", null, null);
+        return new ApiDtos.CashProductDescriptionResponse(value);
     }
 
     @GetMapping("/dashboard")
