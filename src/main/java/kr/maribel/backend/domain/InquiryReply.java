@@ -23,8 +23,9 @@ public class InquiryReply extends TimestampedEntity {
     @JoinColumn(name = "inquiry_id", nullable = false)
     private ContactInquiry inquiry;
 
+    // 멤버 기반 관리자는 admin_users 레코드가 없어 null 로 기록될 수 있다. (점검 M2)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "admin_id", nullable = false)
+    @JoinColumn(name = "admin_id")
     private AdminAccount admin;
 
     @Lob

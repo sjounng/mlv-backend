@@ -12,4 +12,7 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
     List<RefundRequest> findTop50ByOrderByCreatedAtDesc();
 
     long countByStatus(RefundStatus status);
+
+    // 같은 충전 건에 대한 중복 환불 요청 방지
+    boolean existsByCashChargeIdAndStatus(Long cashChargeId, RefundStatus status);
 }

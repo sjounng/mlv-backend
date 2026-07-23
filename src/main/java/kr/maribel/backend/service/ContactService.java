@@ -53,8 +53,11 @@ public class ContactService {
     public ContactInquiry reply(Long inquiryId, Long adminId, String content) {
         ContactInquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> ApiException.notFound("INQUIRY_NOT_FOUND", "문의를 찾을 수 없습니다."));
-        AdminAccount admin = adminAccountRepository.findById(adminId)
-                .orElseThrow(() -> ApiException.notFound("ADMIN_NOT_FOUND", "관리자를 찾을 수 없습니다."));
+        // 멤버 기반 관리자는 admin_accounts 레코드가 없어 adminId 가 null 이다. (점검 M2 — 500 방지)
+        AdminAccount admin = adminId == null
+                ? null
+                : adminAccountRepository.findById(adminId)
+                        .orElseThrow(() -> ApiException.notFound("ADMIN_NOT_FOUND", "관리자를 찾을 수 없습니다."));
         replyRepository.save(new InquiryReply(inquiry, admin, content));
         inquiry.markAnswered();
         return inquiry;
