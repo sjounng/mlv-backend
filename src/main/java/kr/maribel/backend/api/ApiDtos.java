@@ -2,6 +2,7 @@ package kr.maribel.backend.api;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -245,8 +246,8 @@ public final class ApiDtos {
     ) {
     }
 
+    // 지급 캐시량은 서버가 결제 금액으로부터 산정한다. 클라이언트는 결제 금액(원)만 보낸다. (점검 H1)
     public record CashChargeRequest(
-            @Positive long cashAmount,
             @Positive long paymentAmountKrw
     ) {
     }
@@ -274,7 +275,7 @@ public final class ApiDtos {
 
     public record PurchaseRequest(
             @NotNull Long productId,
-            @Min(1) int quantity
+            @Min(1) @Max(100) int quantity
     ) {
     }
 

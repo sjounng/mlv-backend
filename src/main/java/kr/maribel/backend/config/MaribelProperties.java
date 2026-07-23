@@ -45,6 +45,7 @@ public class MaribelProperties {
     private Stella stella = new Stella();
     private BootstrapAdmin bootstrapAdmin = new BootstrapAdmin();
     private LoginRateLimit loginRateLimit = new LoginRateLimit();
+    private Cash cash = new Cash();
 
     public LoginRateLimit getLoginRateLimit() {
         return loginRateLimit;
@@ -52,6 +53,14 @@ public class MaribelProperties {
 
     public void setLoginRateLimit(LoginRateLimit loginRateLimit) {
         this.loginRateLimit = loginRateLimit;
+    }
+
+    public Cash getCash() {
+        return cash;
+    }
+
+    public void setCash(Cash cash) {
+        this.cash = cash;
     }
 
     public Jwt getJwt() {
@@ -323,6 +332,19 @@ public class MaribelProperties {
 
         public void setFailureRedirectUri(String failureRedirectUri) {
             this.failureRedirectUri = failureRedirectUri;
+        }
+    }
+
+    public static class Cash {
+        // 결제 금액(원) → 지급 캐시 환율. 기본 1원 = 1캐시. 서버가 지급량을 산정하는 기준. (점검 H1)
+        private long krwPerCash = 1L;
+
+        public long getKrwPerCash() {
+            return krwPerCash;
+        }
+
+        public void setKrwPerCash(long krwPerCash) {
+            this.krwPerCash = krwPerCash;
         }
     }
 

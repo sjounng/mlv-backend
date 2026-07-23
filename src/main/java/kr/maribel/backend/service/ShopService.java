@@ -54,6 +54,7 @@ public class ShopService {
     private final CashService cashService;
     private final MailService mailService;
     private final MaribelProperties properties;
+    private final SiteSettingService siteSettingService;
 
     public ShopService(CategoryRepository categoryRepository,
                        ProductRepository productRepository,
@@ -62,7 +63,8 @@ public class ShopService {
                        PurchaseOrderRepository purchaseOrderRepository,
                        CashService cashService,
                        MailService mailService,
-                       MaribelProperties properties) {
+                       MaribelProperties properties,
+                       SiteSettingService siteSettingService) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.mailTemplateRepository = mailTemplateRepository;
@@ -71,6 +73,7 @@ public class ShopService {
         this.cashService = cashService;
         this.mailService = mailService;
         this.properties = properties;
+        this.siteSettingService = siteSettingService;
     }
 
     @Transactional(readOnly = true)
@@ -94,10 +97,25 @@ public class ShopService {
         return product;
     }
 
+    // 충전 시 지급 캐시량은 서버가 결정한다. 클라이언트가 보낸 cashAmount 는 신뢰하지 않는다.
+    //  (기본 환율 1원 = 1캐시. maribel.cash.krw-per-cash 로 조정) — 07-12 점검 H1
+    private static final long CHARGE_MIN_KRW = 100L;
+    private static final long CHARGE_MAX_KRW = 1_000_000L;
+
     @Transactional
     public CashCharge createCashCharge(Member member, CashChargeRequest request) {
+        if (!siteSettingService.isShopEnabled()) {
+            throw ApiException.badRequest("SHOP_DISABLED", "현재 상점이 비활성화 상태입니다.");
+        }
+        long paymentKrw = request.paymentAmountKrw();
+        if (paymentKrw < CHARGE_MIN_KRW || paymentKrw > CHARGE_MAX_KRW) {
+            throw ApiException.badRequest("INVALID_CHARGE_AMOUNT",
+                    "충전 금액은 " + CHARGE_MIN_KRW + "원 ~ " + CHARGE_MAX_KRW + "원 사이여야 합니다.");
+        }
+        long krwPerCash = Math.max(1L, properties.getCash().getKrwPerCash());
+        long cashAmount = paymentKrw / krwPerCash; // 서버 산출
         String merchantOrderId = "cash_" + UUID.randomUUID().toString().replace("-", "");
-        return cashChargeRepository.save(new CashCharge(merchantOrderId, member, request.cashAmount(), request.paymentAmountKrw()));
+        return cashChargeRepository.save(new CashCharge(merchantOrderId, member, cashAmount, paymentKrw));
     }
 
     public String paymentUrl(CashCharge charge) {
@@ -113,13 +131,15 @@ public class ShopService {
             throw ApiException.unauthorized("INVALID_STELLA_SIGNATURE", "Stella IT 웹훅 서명이 올바르지 않습니다.");
         }
 
-        CashCharge charge = cashChargeRepository.findByMerchantOrderId(request.merchantOrderId())
+        // 동시/재전송 웹훅에 의한 이중 지급을 막기 위해 행을 잠근 뒤 상태 전이를 판정한다. (점검 H2/M3)
+        CashCharge charge = cashChargeRepository.findByMerchantOrderIdForUpdate(request.merchantOrderId())
                 .orElseThrow(() -> ApiException.notFound("CASH_CHARGE_NOT_FOUND", "충전 주문을 찾을 수 없습니다."));
 
         String status = request.status().trim().toUpperCase();
         if ("PAID".equals(status) || "SUCCESS".equals(status) || "SUCCEEDED".equals(status)) {
-            if (charge.getStatus() == ChargeStatus.PAID) {
-                log.info("stella webhook duplicate PAID ignored: merchantOrderId={}", charge.getMerchantOrderId());
+            // READY 상태에서만 지급한다. 이미 PAID/FAILED/REFUNDED 면 재지급/재전송 지급을 막는다.
+            if (charge.getStatus() != ChargeStatus.READY) {
+                log.info("stella webhook PAID ignored (status={}): merchantOrderId={}", charge.getStatus(), charge.getMerchantOrderId());
                 return charge;
             }
             if (request.paidAmountKrw() != charge.getPaymentAmountKrw()) {
@@ -135,6 +155,11 @@ public class ShopService {
         }
 
         if ("FAILED".equals(status) || "CANCELLED".equals(status) || "CANCELED".equals(status)) {
+            // 이미 지급 완료(PAID)/환불(REFUNDED) 건은 실패로 덮어쓰지 않는다. READY 만 실패 처리.
+            if (charge.getStatus() != ChargeStatus.READY) {
+                log.info("stella webhook FAILED ignored (status={}): merchantOrderId={}", charge.getStatus(), charge.getMerchantOrderId());
+                return charge;
+            }
             charge.markFailed();
             log.info("cash charge failed: merchantOrderId={}, status={}", charge.getMerchantOrderId(), status);
             return charge;
@@ -145,6 +170,9 @@ public class ShopService {
 
     @Transactional
     public PurchaseOrder purchase(Member member, PurchaseRequest request) {
+        if (!siteSettingService.isShopEnabled()) {
+            throw ApiException.badRequest("SHOP_DISABLED", "현재 상점이 비활성화 상태입니다.");
+        }
         // 동시 구매 시 재고 초과 판매를 막기 위해 상품 행을 잠근 뒤 차감한다.
         Product product = productRepository.findByIdForUpdate(request.productId())
                 .orElseThrow(() -> ApiException.notFound("PRODUCT_NOT_FOUND", "상품을 찾을 수 없습니다."));
