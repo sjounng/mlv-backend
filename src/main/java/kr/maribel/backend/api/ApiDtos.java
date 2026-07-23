@@ -16,6 +16,7 @@ import kr.maribel.backend.domain.DomainEnums.CashTransactionType;
 import kr.maribel.backend.domain.DomainEnums.ChargeStatus;
 import kr.maribel.backend.domain.DomainEnums.ContactCategory;
 import kr.maribel.backend.domain.DomainEnums.ContactStatus;
+import kr.maribel.backend.domain.DomainEnums.EventStatus;
 import kr.maribel.backend.domain.DomainEnums.EventType;
 import kr.maribel.backend.domain.DomainEnums.MailSourceType;
 import kr.maribel.backend.domain.DomainEnums.OutboundMailStatus;
@@ -388,11 +389,14 @@ public final class ApiDtos {
 
     public record EventUpsertRequest(
             @NotBlank String name,
-            @NotNull EventType type,
-            @NotBlank String description,
+            EventType type,
+            String bannerImageUrl,
+            String description,
             @NotNull Instant startAt,
             @NotNull Instant endAt,
-            @NotNull Long mailTemplateId,
+            @NotNull EventStatus status,
+            boolean featured,
+            Long mailTemplateId,
             boolean active
     ) {
     }
@@ -401,11 +405,15 @@ public final class ApiDtos {
             Long id,
             String name,
             EventType type,
+            String bannerImageUrl,
             String description,
             Instant startAt,
             Instant endAt,
+            EventStatus status,
+            boolean featured,
             boolean active,
-            Long mailTemplateId
+            Long mailTemplateId,
+            Instant publishedAt
     ) {
     }
 
