@@ -145,6 +145,8 @@ public final class ApiDtos {
             BannerPlacement placement,
             @NotNull Instant startAt,
             @NotNull Instant endAt,
+            // 슬라이더 내 노출 순서 (작을수록 먼저)
+            int sortOrder,
             boolean active
     ) {
     }
@@ -175,6 +177,7 @@ public final class ApiDtos {
             BannerPlacement placement,
             Instant startAt,
             Instant endAt,
+            int sortOrder,
             boolean active,
             Instant createdAt
     ) {

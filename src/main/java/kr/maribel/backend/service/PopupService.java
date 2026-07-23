@@ -21,7 +21,7 @@ public class PopupService {
 
     @Transactional(readOnly = true)
     public List<Popup> all() {
-        return popupRepository.findAllByOrderByStartAtDesc();
+        return popupRepository.findAllByOrderBySortOrderAscCreatedAtDesc();
     }
 
     @Transactional(readOnly = true)
@@ -40,6 +40,7 @@ public class PopupService {
         validatePeriod(request);
         Popup popup = new Popup(request.imageUrl(), request.linkUrl(), placementOf(request), request.startAt(), request.endAt());
         popup.setActive(request.active());
+        popup.setSortOrder(request.sortOrder());
         return popupRepository.save(popup);
     }
 
@@ -52,7 +53,7 @@ public class PopupService {
     public Popup update(Long id, PopupRequest request) {
         validatePeriod(request);
         Popup popup = get(id);
-        popup.update(request.imageUrl(), request.linkUrl(), placementOf(request), request.startAt(), request.endAt(), request.active());
+        popup.update(request.imageUrl(), request.linkUrl(), placementOf(request), request.startAt(), request.endAt(), request.sortOrder(), request.active());
         return popup;
     }
 
