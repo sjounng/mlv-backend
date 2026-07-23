@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info", "/h2-console/**", "/v3/api-docs/**", "/scalar", "/scalar/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/auth/microsoft/**", "/api/auth/dev-login", "/api/auth/refresh", "/api/auth/logout", "/api/admin/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/legal/**", "/api/shop/categories", "/api/shop/products", "/api/shop/products/**", "/api/events").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/legal/**", "/api/shop/categories", "/api/shop/products", "/api/shop/products/**", "/api/shop/cash-products", "/api/shop/cash-products/**", "/api/shop/cash-product-description", "/api/events").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/stella/webhook").permitAll()
                         .requestMatchers("/api/webpanel/**").hasRole("WEBPANEL")
                         // 권한(역할) 변경은 최고 관리자만 (일반 /api/admin/** 규칙보다 먼저 매칭)

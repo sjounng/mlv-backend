@@ -4,6 +4,7 @@ import kr.maribel.backend.api.ApiDtos.AdminAccountResponse;
 import kr.maribel.backend.api.ApiDtos.AdminMemberResponse;
 import kr.maribel.backend.api.ApiDtos.AuditLogResponse;
 import kr.maribel.backend.api.ApiDtos.CashChargeResponse;
+import kr.maribel.backend.api.ApiDtos.CashProductResponse;
 import kr.maribel.backend.api.ApiDtos.CashTransactionResponse;
 import kr.maribel.backend.api.ApiDtos.CategoryResponse;
 import kr.maribel.backend.api.ApiDtos.ChargeHistoryResponse;
@@ -182,6 +183,18 @@ public final class DtoMapper {
                 refund.getOperatorMemo(),
                 refund.getProcessedAt(),
                 refund.getCreatedAt()
+        );
+    }
+
+    public static CashProductResponse cashProduct(kr.maribel.backend.domain.CashProduct p) {
+        return new CashProductResponse(
+                p.getId(),
+                p.getName(),
+                p.getPriceKrw(),
+                p.getCashAmount(),
+                p.getIconUrl(),
+                p.getSortOrder(),
+                p.isActive()
         );
     }
 

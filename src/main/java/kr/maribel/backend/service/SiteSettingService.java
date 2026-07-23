@@ -10,11 +10,30 @@ import org.springframework.transaction.annotation.Transactional;
 public class SiteSettingService {
 
     public static final String SHOP_ENABLED = "shop.enabled";
+    // 모든 캐시 충전 상품 페이지에 공통으로 표시되는 상세 소개 본문 (07-22 웹상점 개편)
+    public static final String CASH_PRODUCT_DESCRIPTION = "cash.product.description";
 
     private final SiteSettingRepository repository;
 
     public SiteSettingService(SiteSettingRepository repository) {
         this.repository = repository;
+    }
+
+    @Transactional(readOnly = true)
+    public String getCashProductDescription() {
+        return repository.findById(CASH_PRODUCT_DESCRIPTION)
+                .map(SiteSetting::getValue)
+                .orElse("");
+    }
+
+    @Transactional
+    public String setCashProductDescription(String value) {
+        String normalized = value == null ? "" : value;
+        SiteSetting setting = repository.findById(CASH_PRODUCT_DESCRIPTION)
+                .orElseGet(() -> new SiteSetting(CASH_PRODUCT_DESCRIPTION, ""));
+        setting.setValue(normalized);
+        repository.save(setting);
+        return normalized;
     }
 
     @Transactional(readOnly = true)

@@ -252,6 +252,39 @@ public final class ApiDtos {
     ) {
     }
 
+    // 캐시 충전 상품(패키지) — 07-22 웹상점 개편
+    public record CashProductResponse(
+            Long id,
+            String name,
+            long priceKrw,
+            long cashAmount,
+            String iconUrl,
+            int sortOrder,
+            boolean active
+    ) {
+    }
+
+    public record CashProductUpsertRequest(
+            @NotBlank String name,
+            @Positive long priceKrw,
+            @Positive long cashAmount,
+            String iconUrl,
+            int sortOrder,
+            boolean active
+    ) {
+    }
+
+    // 모든 캐시 상품 페이지에 공통 표시되는 상세 소개 본문
+    public record CashProductDescriptionRequest(
+            String description
+    ) {
+    }
+
+    public record CashProductDescriptionResponse(
+            String description
+    ) {
+    }
+
     public record CashChargeResponse(
             Long id,
             String merchantOrderId,
