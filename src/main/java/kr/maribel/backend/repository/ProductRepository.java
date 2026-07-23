@@ -13,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
+    long countByCategoryId(Long categoryId);
+
     @EntityGraph(attributePaths = {"category", "mailTemplate"})
     Optional<Product> findWithCategoryAndMailTemplateById(Long id);
 

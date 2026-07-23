@@ -256,6 +256,17 @@ public class ShopService {
     }
 
     @Transactional
+    public void deleteCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("CATEGORY_NOT_FOUND", "카테고리를 찾을 수 없습니다."));
+        // 카테고리에 상품이 있으면 삭제 불가 (FK 보호). 상품을 옮기거나 삭제 후 처리.
+        if (productRepository.countByCategoryId(id) > 0) {
+            throw ApiException.badRequest("CATEGORY_HAS_PRODUCTS", "카테고리에 상품이 있어 삭제할 수 없습니다. 상품을 옮기거나 삭제해 주세요.");
+        }
+        categoryRepository.delete(category);
+    }
+
+    @Transactional
     public MailTemplate createMailTemplate(String mailCode, String subject, String content, String rewardsJson) {
         if (mailTemplateRepository.findByMailCode(mailCode).isPresent()) {
             throw ApiException.conflict("MAIL_TEMPLATE_DUPLICATED", "이미 존재하는 우편 코드입니다.");
@@ -284,6 +295,17 @@ public class ShopService {
                 request.active(), request.stockQuantity(), request.recommended(), request.newBadge(),
                 request.purchaseLimitType(), request.purchaseLimitCount() == null ? 1 : request.purchaseLimitCount());
         return product;
+    }
+
+    @Transactional
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("PRODUCT_NOT_FOUND", "상품을 찾을 수 없습니다."));
+        // 구매 이력이 있으면 삭제 불가 (이력 보존/FK 보호). 판매 중지(비공개)로 전환 권장.
+        if (purchaseOrderRepository.countByProductId(id) > 0) {
+            throw ApiException.badRequest("PRODUCT_HAS_ORDERS", "구매 이력이 있어 삭제할 수 없습니다. 판매 중지(비공개)로 전환해 주세요.");
+        }
+        productRepository.delete(product);
     }
 
     private boolean isValidStellaSignature(StellaWebhookRequest request, String signatureHeader) {

@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Long> {
 
+    long countByProductId(Long productId);
+
     @EntityGraph(attributePaths = {"product", "outboundMail"})
     List<PurchaseOrder> findTop50ByMemberIdOrderByCreatedAtDesc(Long memberId);
 

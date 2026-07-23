@@ -333,6 +333,13 @@ public class AdminController {
         return DtoMapper.category(category);
     }
 
+    @DeleteMapping("/categories/{id}")
+    @Operation(summary = "카테고리 삭제")
+    void deleteCategory(@AuthenticationPrincipal AuthenticatedPrincipal principal, @PathVariable Long id) {
+        shopService.deleteCategory(id);
+        auditService.record(principal, "Category", String.valueOf(id), "DELETE", null, null);
+    }
+
     @GetMapping("/mail-templates")
     @Operation(summary = "우편 템플릿 목록 조회")
     List<MailTemplateResponse> mailTemplates() {
@@ -379,6 +386,13 @@ public class AdminController {
         Product product = shopService.upsertProduct(id, request);
         auditService.record(principal, "Product", String.valueOf(product.getId()), "UPDATE", null, product.getName());
         return DtoMapper.product(product);
+    }
+
+    @DeleteMapping("/products/{id}")
+    @Operation(summary = "상품 삭제")
+    void deleteProduct(@AuthenticationPrincipal AuthenticatedPrincipal principal, @PathVariable Long id) {
+        shopService.deleteProduct(id);
+        auditService.record(principal, "Product", String.valueOf(id), "DELETE", null, null);
     }
 
     @GetMapping("/events")
