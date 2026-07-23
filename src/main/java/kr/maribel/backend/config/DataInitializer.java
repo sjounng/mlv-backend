@@ -130,10 +130,14 @@ public class DataInitializer implements ApplicationRunner {
             eventRepository.save(new MaribelEvent(
                     "매일 출석 체크",
                     EventType.ATTENDANCE,
+                    null,
                     "하루 한 번 출석 보상을 받을 수 있습니다.",
                     Instant.now().minus(1, ChronoUnit.DAYS),
                     Instant.now().plus(365, ChronoUnit.DAYS),
-                    attendance
+                    kr.maribel.backend.domain.DomainEnums.EventStatus.ONGOING,
+                    false,
+                    attendance,
+                    true
             ));
         }
     }

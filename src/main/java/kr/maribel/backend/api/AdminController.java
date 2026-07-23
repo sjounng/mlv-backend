@@ -353,6 +353,13 @@ public class AdminController {
         return DtoMapper.event(event);
     }
 
+    @DeleteMapping("/events/{id}")
+    @Operation(summary = "이벤트 삭제")
+    void deleteEvent(@AuthenticationPrincipal AuthenticatedPrincipal principal, @PathVariable Long id) {
+        eventService.deleteEvent(id);
+        auditService.record(principal, "Event", String.valueOf(id), "DELETE", null, null);
+    }
+
     @PostMapping("/redeem-codes")
     @Operation(summary = "리딤코드 생성")
     RedeemCodeResponse createRedeemCode(@AuthenticationPrincipal AuthenticatedPrincipal principal,

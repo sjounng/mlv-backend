@@ -190,11 +190,15 @@ public final class DtoMapper {
                 event.getId(),
                 event.getName(),
                 event.getType(),
+                event.getBannerImageUrl(),
                 event.getDescription(),
                 event.getStartAt(),
                 event.getEndAt(),
+                event.getStatus(),
+                event.isFeatured(),
                 event.isActive(),
-                event.getMailTemplate().getId()
+                event.getMailTemplate() == null ? null : event.getMailTemplate().getId(),
+                event.getCreatedAt()
         );
     }
 

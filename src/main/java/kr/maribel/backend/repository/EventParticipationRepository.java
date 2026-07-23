@@ -11,6 +11,8 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
 
     boolean existsByMemberIdAndEventIdAndClaimKey(Long memberId, Long eventId, String claimKey);
 
+    long countByEventId(Long eventId);
+
     @Query("select p.claimKey from EventParticipation p where p.member.id = :memberId and p.event.id = :eventId")
     List<String> findClaimKeys(@Param("memberId") Long memberId, @Param("eventId") Long eventId);
 
